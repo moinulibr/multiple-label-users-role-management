@@ -13,18 +13,30 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->nullable();
-            $table->string('mobile')->nullable();
-            $table->string('email')->nullable();
-            $table->timestamp('email_verified_at')->nullable();
+
+            $table->string('name', 100)->nullable();
+            $table->string('email', 120)->nullable()->unique();
             $table->string('password')->nullable();
-            $table->string('provider',30)->nullable();
-            $table->string('provider_id')->nullable();
+
+            $table->string('mobile', 20)->unique()->comment('Primary mobile for login');
+            $table->string('secondary_mobile', 20)->nullable();
+
+            $table->string('provider', 30)->nullable()->comment('e.g. google, facebook, apple');
+            $table->string('provider_id', 100)->nullable()->comment('OAuth provider user id');
+
+            $table->tinyInteger('status')->default(1)->comment('1=active, 0=inactive, 2=suspended');
+            $table->boolean('is_developer')->default(false)->comment('Developer bypass login access');
+
+            $table->timestamp('phone_verified_at')->nullable();
+            $table->timestamp('email_verified_at')->nullable();
+
+            //$table->string('otp_code', 10)->nullable()->comment('Temporary OTP code for verification');
+
             $table->string('profile_picture')->nullable();
-            $table->rememberToken();
+
             $table->timestamps();
         });
-
+        
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');
