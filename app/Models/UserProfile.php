@@ -81,7 +81,6 @@ class UserProfile extends Model
             $profiles->push((object)['business_id' => 403, 'business_name' => 'Inactive Business', 'role' => 'Inactive Role', 'status' => 0]);
         }
 
-
         // Filter only active profiles (status == 1)
         return $profiles->filter(fn($p) => $p->status === 1)->values();
     }
