@@ -18,8 +18,8 @@ return new class extends Migration
             $table->string('email', 120)->nullable()->unique();
             $table->string('password')->nullable();
 
-            $table->string('mobile', 20)->unique()->comment('Primary mobile for login');
-            $table->string('secondary_mobile', 20)->nullable();
+            $table->string('phone', 20)->unique()->comment('Primary phone for login');
+            $table->string('secondary_phone', 20)->nullable();
 
             $table->string('provider', 30)->nullable()->comment('e.g. google, facebook, apple');
             $table->string('provider_id', 100)->nullable()->comment('OAuth provider user id');

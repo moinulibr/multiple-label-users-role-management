@@ -15,9 +15,14 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::factory()->create([
+        $this->call([
+            UserTypeSeeder::class, // প্রথমে User Types
+            InitialDataSeeder::class, // তারপর বাকি সব ডেটা
+        ]);
+
+        /* User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
-        ]);
+        ]); */
     }
 }

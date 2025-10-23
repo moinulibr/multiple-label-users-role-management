@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Traits\HasCustomPermissions;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
@@ -27,10 +28,15 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
-        'mobile',
-        'provider_id',
-        'provider',
         'password',
+        'phone',
+        'secondary_phone',
+        'provider',
+        'provider_id',
+        'status',
+        'is_developer',
+        'phone_verified_at',
+        'email_verified_at',
         'profile_picture'
     ];
 
@@ -49,14 +55,22 @@ class User extends Authenticatable
      *
      * @return array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'phone_verified_at' => 'datetime',
+        'is_developer' => 'boolean',
+        'password' => 'hashed',
+    ];
 
+    public function profiles(): HasMany
+    {
+        return $this->hasMany(UserProfile::class);
+    }
+    
+    public function otpAttempts(): HasMany
+    {
+        return $this->hasMany(OtpAttempt::class);
+    }
 
     /**
      * Accessor define for profile_picture attribute.

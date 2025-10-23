@@ -24,12 +24,13 @@ return new class extends Migration {
                 ->nullable()
                 ->constrained('businesses')
                 ->onDelete('cascade')
-                ->comment('NULL for customer/referral, set for business users');
+                ->comment('NULL for customer/referral, set business id for business users');
 
             $table->boolean('is_primary')->default(false)->comment('Default login panel');
-            $table->decimal('commission_rate', 5, 2)->nullable()->comment('Commission rate if applicable');
+            //$table->decimal('commission_rate', 5, 2)->nullable()->comment('Commission rate if applicable');
 
             $table->tinyInteger('status')->default(1)->comment('1=active, 0=inactive, 2=suspended');
+            $table->string('profile_picture')->nullable();
 
             $table->unique(['user_id', 'user_type_id', 'business_id'], 'unique_user_business_profiles');
             $table->timestamps();

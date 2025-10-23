@@ -9,7 +9,7 @@ return new class extends Migration {
     {
         Schema::create('businesses', function (Blueprint $table) {
             $table->id();
-            $table->boolean('is_prime')->default(false)->comment('If true, its a software ownership');
+            $table->boolean('is_prime')->default(false)->comment('If true, its a software ownership, false = business ownership company [business ownership is under software ownership]');
             $table->tinyInteger('business_type')->default(1)->comment('1=personal, 2=company');
 
             $table->foreignId('parent_business_id')
