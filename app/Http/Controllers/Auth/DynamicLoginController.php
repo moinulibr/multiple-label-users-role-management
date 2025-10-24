@@ -21,7 +21,6 @@ class DynamicLoginController extends Controller
         $this->otpService = $otpService;
     }
 
-    // --- Helper Functions ---
 
     /**
      * Mock function to get user profiles (businesses and roles) and group them by business.
@@ -109,8 +108,6 @@ class DynamicLoginController extends Controller
         }
         return $user;
     }
-
-    // --- Controller Methods ---
 
     public function showLoginForm()
     {
