@@ -43,7 +43,7 @@ class UserProfile extends Model
      * @return \Illuminate\Support\Collection
      */
     public static function getActiveProfilesForUser($userId)
-    {
+    { //findout this. and remove this
         // Mock data to test all scenarios requested by the user:
         // Case 1: Single Profile (User ID 10) - Auto login
         // Case 2: Multiple Profiles, business_id = null (User ID 20) - General selection
