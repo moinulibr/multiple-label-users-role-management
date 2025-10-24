@@ -67,13 +67,6 @@
             <input type="hidden" id="role-input" name="role">
             <input type="hidden" id="login-key-value-input" name="login_key_value">
 
-            <!-- Shared 'Change' Button -->
-            <button type="button" id="change-key-button"
-                class="text-indigo-600 hover:text-indigo-800 text-sm font-medium whitespace-nowrap hidden"
-                onclick="goToStep1()">
-                Change Email/Phone
-            </button>
-
             <!-- 1. Step 1: Key Input (Email/Phone) -->
             <div id="step-1" class="form-container active">
                 <label for="login-key" class="block text-sm font-medium text-gray-700">
@@ -114,10 +107,18 @@
                 <!-- Dynamic Label and Input -->
                 <div>
                     <div class="flex justify-between items-center">
-                        <label id="credential-label" for="credential" class="block text-sm font-medium text-gray-700">
-                            Password
-                        </label>
-                        <span id="login-key-display" class="text-xs text-indigo-600 font-semibold"></span>
+                        <div>
+                            <label id="credential-label" for="credential" class="block text-sm font-medium text-gray-700">
+                                Password
+                            </label>
+                        </div>
+                        <div>
+                            <button type="button" id="change-key-button"
+                                class="text-indigo-600 hover:text-indigo-800 text-sm font-medium whitespace-nowrap"
+                                onclick="goToStep1()">
+                                Change   <span id="login-key-display" class="text-xs text-indigo-600 font-semibold"></span>
+                            </button>
+                        </div>
                     </div>
                     <div class="mt-1">
                         <input id="credential" type="password" autocomplete="current-password" required

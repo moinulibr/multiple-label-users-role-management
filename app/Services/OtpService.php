@@ -24,8 +24,8 @@ class OtpService
         OtpAttempt::where('recipient', $recipient)
             ->where('purpose', $purpose)
             ->whereNull('used_at')
-            ->where('expires_at', '>', Carbon::now('UTC'))
-            ->update(['used_at' => Carbon::now('UTC')]);
+            ->where('expires_at', '>', Carbon::now('Asia/Dhaka'))
+            ->update(['used_at' => Carbon::now('Asia/Dhaka')]);
 
         // 2. Generate a 4-digit OTP
         $otpCode = rand(1000, 9999);
@@ -35,7 +35,7 @@ class OtpService
             'user_id' => $user->id,
             'recipient' => $recipient,
             'otp_code' => $otpCode,
-            'expires_at' => Carbon::now('UTC')->addMinutes($expiryMinutes),
+            'expires_at' => Carbon::now('Asia/Dhaka')->addMinutes($expiryMinutes),
             'purpose' => $purpose,
         ]);
 
@@ -56,7 +56,7 @@ class OtpService
             ->where('purpose', $purpose)
             ->where('otp_code', $otpCode)
             ->whereNull('used_at')
-            ->where('expires_at', '>', Carbon::now('UTC'))
+            ->where('expires_at', '>', Carbon::now('Asia/Dhaka'))
             ->latest()
             ->first();
 
@@ -71,6 +71,6 @@ class OtpService
      */
     public function markOtpAsUsed(OtpAttempt $otpAttempt): bool
     {
-        return $otpAttempt->update(['used_at' => Carbon::now('UTC')]);
+        return $otpAttempt->update(['used_at' => Carbon::now('Asia/Dhaka')]);
     }
 }

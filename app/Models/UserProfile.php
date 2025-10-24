@@ -50,7 +50,7 @@ class UserProfile extends Model
         // Case 3: Multiple Profiles, same business_id (User ID 30) - Role selection for one business
         // Case 4: Multiple Profiles, different business_id (User ID 40) - Business then Role selection
 
-        $profiles = collect([]);
+        return $profiles = collect([]);
 
         if ($userId == 10) {
             // Case 1: Single profile, direct verification
