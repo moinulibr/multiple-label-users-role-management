@@ -246,7 +246,6 @@
         }
 
         // --- Step 2: Profile Selection & Rendering ---
-
         function renderProfiles(profiles) {
             profilesList.innerHTML = '';
             selectedProfile = null;
