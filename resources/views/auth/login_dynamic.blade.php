@@ -229,6 +229,7 @@
 
         // --- Step 1: Input Validation ---
 
+
         function checkLoginKey() {
             const key = loginKeyInput.value.trim();
             nextButton.disabled = key.length < 5;
