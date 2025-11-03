@@ -14,61 +14,61 @@ class InitialDataSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. ইউজার টাইপ লোড করা
+        // 1. Load User Types
         $userTypes = UserType::pluck('id', 'name')->toArray();
         $userTypeIds = (object)$userTypes;
 
         // =========================================================
-        // 2. সকল ইউজার তৈরি করা (FIRST: to satisfy Foreign Key constraints)
+        // 2. Create All Users (FIRST: to satisfy Foreign Key constraints)
         // =========================================================
 
         $usersToSeed = [
             // A. System Admin (Prime Business Owner)
             'admin_user' => [
                 'name' => 'System Admin',
-                'email' => 'admin@system.com',
+                'email' => 'admin@gmail.com',
                 'phone' => '8801700000001',
                 'type' => 'super_admin',
             ],
             // B. Rent Owner (Tenant Business Owner)
             'rent_owner_user' => [
                 'name' => 'Rent Business Owner',
-                'email' => 'owner@rent.com',
+                'email' => 'business.owner@gmail.com',
                 'phone' => '8801700000002',
                 'type' => 'rent_owner',
             ],
             // C. Car Owner (Tenant Partner)
             'car_owner_user' => [
                 'name' => 'Car Owner User',
-                'email' => 'car.owner@rent.com',
+                'email' => 'car.owner@gmail.com',
                 'phone' => '8801700000003',
                 'type' => 'car_owner',
             ],
             // D. Driver (Tenant Employee)
             'driver_user' => [
                 'name' => 'Driver User',
-                'email' => 'driver@rent.com',
+                'email' => 'driver@gmail.com',
                 'phone' => '8801700000004',
                 'type' => 'driver',
             ],
             // E. Staff (Tenant Employee)
             'staff_user' => [
                 'name' => 'Staff Employee',
-                'email' => 'staff@rent.com',
+                'email' => 'staff@gmail.com',
                 'phone' => '8801700000005',
                 'type' => 'staff',
             ],
             // F. Referral (General User)
             'referral_user' => [
                 'name' => 'General Referral',
-                'email' => 'referral@general.com',
+                'email' => 'referral@gmail.com',
                 'phone' => '8801700000006',
                 'type' => 'referral',
             ],
             // G. Customer (General User)
             'customer_user' => [
                 'name' => 'General Customer',
-                'email' => 'customer@general.com',
+                'email' => 'customer@gmail.com',
                 'phone' => '8801700000007',
                 'type' => 'customer',
             ],
@@ -78,7 +78,7 @@ class InitialDataSeeder extends Seeder
         foreach ($usersToSeed as $key => $userData) {
             $createdUsers[$key] = User::firstOrCreate(['email' => $userData['email']], [
                 'name' => $userData['name'],
-                'password' => Hash::make('password'),
+                'password' => Hash::make('123456'),
                 'phone' => $userData['phone'],
                 'status' => 1,
                 'email_verified_at' => now(),
@@ -87,14 +87,14 @@ class InitialDataSeeder extends Seeder
         }
 
         // =========================================================
-        // 3. বিজনেস তৈরি করা (SECOND: now we have valid owner_user_id)
+        // 3. Create Businesses (SECOND: now we have valid owner_user_id)
         // =========================================================
 
         // A. Prime System Business
         $primeBusiness = Business::firstOrCreate(['name' => 'Software Prime Ownership'], [
             'is_prime' => true,
             'business_type' => 2, // Company
-            // 💡 এখন সঠিক ইউজার আইডি ব্যবহার করা হলো
+            // 💡 Using the correct User ID now
             'owner_user_id' => $createdUsers['admin_user']->id,
             'slug' => 'prime-software',
             'email' => 'prime@software.com',
@@ -105,7 +105,7 @@ class InitialDataSeeder extends Seeder
         $tenantBusiness = Business::firstOrCreate(['name' => 'Rent Management Corp'], [
             'is_prime' => false,
             'business_type' => 2,
-            // 💡 এখন সঠিক ইউজার আইডি ব্যবহার করা হলো
+            // 💡 Using the correct User ID now
             'owner_user_id' => $createdUsers['rent_owner_user']->id,
             'slug' => 'rent-corp',
             'email' => 'info@rentcorp.com',
@@ -113,7 +113,7 @@ class InitialDataSeeder extends Seeder
         ]);
 
         // =========================================================
-        // 4. রোল তৈরি করা (THIRD: Business IDs are available)
+        // 4. Create Roles (THIRD: Business IDs are available)
         // =========================================================
 
         // System-wide Roles (business_id = NULL)
@@ -128,10 +128,10 @@ class InitialDataSeeder extends Seeder
         $staffRole = Role::firstOrCreate(['name' => 'staff_role', 'business_id' => $tenantBusiness->id], ['display_name' => 'Staff/Employee Role (Tenant)', 'permissions' => ['booking.manage']]);
 
         // =========================================================
-        // 5. প্রোফাইল ও রোল অ্যাসাইনমেন্ট (LAST)
+        // 5. Profile and Role Assignment (LAST)
         // =========================================================
 
-        // এই ধাপটি User, Business এবং Role ID-এর উপর নির্ভর করে।
+        // This step depends on User, Business, and Role IDs being available.
         $assignments = [
             'admin_user' => ['role' => $superAdminRole, 'business' => $primeBusiness->id, 'is_primary' => true, 'type' => 'super_admin'],
             'rent_owner_user' => ['role' => $tenantOwnerRole, 'business' => $tenantBusiness->id, 'is_primary' => true, 'type' => 'rent_owner'],
@@ -145,7 +145,7 @@ class InitialDataSeeder extends Seeder
         foreach ($assignments as $userKey => $data) {
             $user = $createdUsers[$userKey];
 
-            // প্রোফাইল তৈরি/আপডেট করা
+            // Create/Update Profile
             DB::table('user_profiles')->updateOrInsert(
                 [
                     'user_id' => $user->id,
@@ -158,7 +158,7 @@ class InitialDataSeeder extends Seeder
                 ]
             );
 
-            // রোল অ্যাসাইন করা
+            // Assign Role
             $user->roles()->syncWithoutDetaching([
                 $data['role']->id => ['business_id' => $data['business']]
             ]);
