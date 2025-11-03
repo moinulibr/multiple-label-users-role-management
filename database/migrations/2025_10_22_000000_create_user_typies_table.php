@@ -13,8 +13,8 @@ return new class extends Migration {
             $table->string('display_name', 100)->nullable()->comment('Display label for UI');
             $table->string('dashboard_key', 50)->nullable()->comment('Example: admin, provider, customer → used to load sidebar/module access');
             $table->boolean('status')->default(true)->comment('true = enable, false = disable');
-            $table->string('login_panel_key', 50)->unique()->comment('Login key (string): its send from login panel');
-            $table->string('login_panel_hash_key', 100)->unique()->comment('Login key (string): its send from login panel');
+            $table->string('login_template_key', 50)->unique()->comment('Login key (string): its send from login panel');
+            $table->string('login_template_hash_key', 100)->unique()->comment('Login key (string): its send from login panel');
             $table->timestamps();
         });
     }

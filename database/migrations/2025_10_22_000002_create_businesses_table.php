@@ -33,6 +33,7 @@ return new class extends Migration {
             $table->string('website', 150)->nullable()->comment('Business website URL');
 
             $table->boolean('can_manage_roles')->default(false)->comment('If true, owner can manage employee roles');
+            $table->boolean('default_login')->default(false)->comment('If true, its return this business related data after loged in');
             $table->boolean('status')->default(true)->comment('true = enable, false = disable');
 
             $table->timestamps();

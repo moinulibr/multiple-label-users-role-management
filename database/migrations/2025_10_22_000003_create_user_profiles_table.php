@@ -26,7 +26,7 @@ return new class extends Migration {
                 ->onDelete('cascade')
                 ->comment('NULL for customer/referral, set business id for business users');
 
-            $table->boolean('is_primary')->default(false)->comment('Default login panel');
+            $table->boolean('default_login')->default(false)->comment('Default login for this user typef');
             //$table->decimal('commission_rate', 5, 2)->nullable()->comment('Commission rate if applicable');
 
             $table->tinyInteger('status')->default(1)->comment('1=active, 0=inactive, 2=suspended');
