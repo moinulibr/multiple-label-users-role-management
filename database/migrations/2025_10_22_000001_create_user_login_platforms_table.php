@@ -12,7 +12,7 @@ return new class extends Migration {
             $table->string('name', 50)->nullable()->comment('like- web or mobile');
             $table->string('platform_key', 100)->nullable()->comment('like- all user, or only customer, or only admin');
             $table->string('platform_hash_key', 100)->nullable()->comment('like- all user, or only customer, or only admin');
-            $table->json('login_template_hash_key')->nullable()->comment('login_template_hash_key - its from user_types table'); //json formated
+            $table->json('login_template_hash_key')->nullable()->comment('login_template_hash_key - its from user_types table');
             $table->boolean('status')->default(true)->comment('true = enable, false = disable');
             $table->timestamps();
         });
