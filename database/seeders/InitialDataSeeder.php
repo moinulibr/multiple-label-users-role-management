@@ -165,6 +165,7 @@ class InitialDataSeeder extends Seeder
             ]);
         }
 
+        //login platforms
         $loginPlatforms = [
             [
                 'name' => 'Web Admin Panel',
