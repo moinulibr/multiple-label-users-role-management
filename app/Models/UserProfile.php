@@ -11,13 +11,13 @@ class UserProfile extends Model
         'user_id',
         'user_type_id',
         'business_id',
-        'is_primary',
+        'default_login',
         'status',
         'profile_picture'
     ];
 
     protected $casts = [
-        'is_primary' => 'boolean',
+        'default_login' => 'boolean',
     ];
 
     public function user(): BelongsTo

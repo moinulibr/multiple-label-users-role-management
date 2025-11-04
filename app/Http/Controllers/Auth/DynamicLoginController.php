@@ -3,13 +3,16 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Business;
 use App\Models\User;
+use App\Models\UserLoginPlatform;
+use App\Models\UserProfile;
 use App\Services\OtpService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-use Carbon\Carbon;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash; // For password verification in a real app
+use Illuminate\Support\Facades\Log; // Changed to Log for better practice
 
 class DynamicLoginController extends Controller
 {
@@ -21,9 +24,10 @@ class DynamicLoginController extends Controller
         $this->otpService = $otpService;
     }
 
-
     /**
      * Mock function to get user profiles (businesses and roles) and group them by business.
+     * NOTE: This is MOCK DATA. In a real application, you would use Eloquent relationships
+     * to fetch data from your `Business` and `UserProfile` models (which you mentioned).
      *
      * @param User $user
      * @return array
@@ -98,7 +102,7 @@ class DynamicLoginController extends Controller
         $normalizedPhone = $this->normalizePhone($phone);
         $lastTenDigits = substr($normalizedPhone, -10);
 
-        $user = User::where('phone', $normalizedPhone)->first();
+        $user = User::where('phone', $normalizedPhone)->where('status',true)->first();
         if (!$user) {
             $user = User::where(function ($query) use ($lastTenDigits) {
                 $query->where('phone', 'like', '%' . $lastTenDigits)
@@ -116,153 +120,121 @@ class DynamicLoginController extends Controller
 
     /**
      * Step 1: Identify user by email or phone. Determines next step.
+     * Checks if the user's role is allowed on the provided platform keys.
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function identifyUser(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'login_key' => 'required|string|max:255',
+        $request->validate([
+            'login_key' => 'required|string|min:5',
+            'platform_hash_key' => 'required|string',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json(['message' => 'Validation Failed.', 'errors' => $validator->errors()], 422);
+        $loginKey = $request->login_key;
+        $platformKey = $request->platform_hash_key;
+
+        // 1. Platform Validation: Fetch the platform configuration
+        $platform = UserLoginPlatform::where('platform_hash_key', $platformKey)
+            ->where('status', true)
+            ->first();
+
+        if (!$platform) {
+            return response()->json(['message' => 'Error: This login platform is unauthorized or disabled.', 'next_step' => 'error'], 403);
         }
 
-        $loginKey = trim($request->input('login_key'));
-        $loginKeyType = 'email';
+        // The stored login_template_hash_key is an array of allowed user role hashes
+        $allowedTemplateHashes = $platform->login_template_hash_key;
 
-        // Check if email or phone
+
+        // 1. Find the User
         if (filter_var($loginKey, FILTER_VALIDATE_EMAIL)) {
-            $user = User::where('email', $loginKey)->first();
-            $loginKeyValue = $loginKey;
+            $user = User::where('email', $loginKey)->where('status', true)->first();
+            $loginKeyType = 'email';
         } else {
-            $loginKeyType = 'phone';
             $user = $this->findUserByNormalizedPhone($loginKey);
-            $loginKeyValue = $user ? $user->phone : $loginKey;
+            $loginKeyType = 'phone';
         }
 
         if (!$user) {
             return response()->json(['message' => 'This account was not found in our system.'], 404);
         }
 
-        $groupedProfiles = $this->getProfilesForUser($user);
-        $businessCount = count($groupedProfiles);
+        $loginKeyValue = ($loginKeyType === 'phone' && $user) ? $user->phone : $loginKey;
 
-        // Determine the next step based on profile count
-        if ($businessCount > 1 || (isset($groupedProfiles[0]) && count($groupedProfiles[0]['roles']) > 1)) {
-            // Step 2: Profile Selection required if multiple businesses OR one business with multiple roles
-            return response()->json([
-                'message' => 'Multiple businesses/roles found. Please select your desired business and role.',
-                'next_step' => 'profile_selection',
-                'login_key_value' => $loginKeyValue,
-                'login_key_type' => $loginKeyType,
-                'user_id' => $user->id,
-                'profiles' => $groupedProfiles,
-            ], 200);
-        } else {
-            // Go directly to Step 3 (Verification) with the single profile selected by default
-            $selectedBusiness = $groupedProfiles[0] ?? ['business_id' => null, 'roles' => ['General']];
-            $selectedRole = $selectedBusiness['roles'][0] ?? 'General';
-
-            $selectedProfile = [
-                'business_id' => $selectedBusiness['business_id'],
-                'role' => $selectedRole,
-            ];
-
-            return $this->processVerificationStep($user, $loginKeyValue, $loginKeyType, $selectedProfile);
+        // 2. Find the User
+        $business = Business::query()->where('owner_user_id', $user->id)->where('status', true);
+        //Log::info("users business count- " . $business->count());
+        //Log::info("users business get- " . json_encode($business->get()));
+        //Log::info("users business first- " . json_encode($business->first()));
+       
+        $defaultBusiness = NULL; 
+        if($business->count() && $business->count() == 1){
+            $defaultBusiness = $business->first();
         }
-    }
-
-    /**
-     * Step 2: Handle profile selection (Business ID and Role) and determine if OTP/Password is needed.
-     * This endpoint handles both the initial business selection and the final business+role selection.
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function selectProfile(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'user_id' => 'required|integer',
-            'login_key_value' => 'required|string',
-            'login_key_type' => ['required', 'string', 'in:email,phone'],
-            'business_id' => 'required',
-            'role' => 'nullable|string', // Role can be null if only business is selected initially
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['message' => 'Validation Failed.', 'errors' => $validator->errors()], 422);
+        else if($business->count() && $business->count() > 1){
+            $defaultBusiness = $business->where('default_login', true)->first();
+        }else{
+            $defaultBusiness = NULL;
         }
 
-        $user = User::find($request->user_id);
-        if (!$user) {
-            return response()->json(['message' => 'User not found for this selection.'], 404);
+        $defaultProfile = NULL;
+        $userProfile = UserProfile::query()->where('user_id', $user->id)->where('status',true);
+        if($defaultBusiness){
+            $defaultProfile = $userProfile->where('business_id', $defaultBusiness->id)
+                ->where('default_login', true)
+                ->first();
+        }else{
+            $defaultProfile = $userProfile->where('default_login', true)->first();
         }
-
-        $businessId = $request->business_id;
-        $role = $request->role; // This is the final selected role, if available
-
-        // Check if role is missing (meaning the user only selected the business, which has multiple roles)
-        if (empty($role)) {
-            $groupedProfiles = $this->getProfilesForUser($user);
-
-            $selectedBusinessData = collect($groupedProfiles)->firstWhere('business_id', $businessId);
-
-            if ($selectedBusinessData && count($selectedBusinessData['roles']) > 1) {
-                // Return to Blade to show role selection for this specific business
-                return response()->json([
-                    'message' => "Please select your role for '{$selectedBusinessData['business_name']}'.",
-                    'next_step' => 'role_selection', // New step state for Blade
-                    'business_name' => $selectedBusinessData['business_name'],
-                    'business_id' => $businessId,
-                    'roles' => $selectedBusinessData['roles'],
-                ], 200);
-            }
-
-            // If role is still null but only one role exists, auto-select it and proceed to verification
-            if ($selectedBusinessData && count($selectedBusinessData['roles']) === 1) {
-                $role = $selectedBusinessData['roles'][0];
-                // Fall through to verification step
-            } else {
-                return response()->json(['message' => 'Invalid profile selection. Role is missing.'], 400);
-            }
+        if(!$defaultProfile){
+            return response()->json(['message' => 'Error: No associated active profile found for this user.', 'next_step' => 'error'], 403);
         }
+        //Log::info("users user type- " . json_encode($defaultProfile->userType->login_template_hash_key));
+        $userTypeLoginTemplateHashKey = $defaultProfile->userType->login_template_hash_key;
 
-        // Final profile selection complete, proceed to verification
+        //Log::info("allowedTemplateHashes- " . json_encode($allowedTemplateHashes));
+        //Log::info("defaultProfile->userType->display_name- " . json_encode($defaultProfile->userType->display_name));
+
+        // The core validation logic: Check if the user's role hash exists in the platform's allowed hashes array
+        if (!in_array($userTypeLoginTemplateHashKey, $allowedTemplateHashes)) {
+            return response()->json(['message' => "Error: Your profile ({$defaultProfile->userType->display_name}) is not authorized for this platform.", 'next_step' => 'error'], 403);
+        }
+        
         $selectedProfile = [
-            'business_id' => $businessId,
-            'role' => $role,
+            'business_id' => $defaultBusiness ? $defaultBusiness->id : NULL,
+            'role' => "admin",
         ];
+        return $this->processVerificationStep($user, $loginKeyValue, $loginKeyType, $selectedProfile);
 
-        return $this->processVerificationStep(
-            $user,
-            $request->login_key_value,
-            $request->login_key_type,
-            $selectedProfile
-        );
     }
+
 
     /**
      * Internal helper to handle OTP generation and preparing for the Verification step.
+     * This is where the core OTP/Password decision is made.
      */
     protected function processVerificationStep(User $user, string $loginKeyValue, string $loginKeyType, array $selectedProfile)
     {
+        // 1. Determine verification method
         $step2Method = ($loginKeyType === 'phone') ? 'otp' : 'password';
         $message = 'Please enter your password.';
 
+        // 2. Handle OTP generation (for phone login)
         if ($step2Method === 'otp') {
             try {
                 // Use the database's phone value as recipient
+                // NOTE: Using $user->phone assumes the phone is stored correctly in the DB
                 $otpCode = $this->otpService->generateAndSaveOtp($user, $user->phone, 'login', 5);
                 $message = "OTP successfully generated and sent to your phone. (OTP: $otpCode - For testing purposes)";
             } catch (\Exception $e) {
-                \Log::error("OTP Creation Failed: " . $e->getMessage());
+                Log::error("OTP Creation Failed: " . $e->getMessage());
                 return response()->json(['message' => 'Failed to generate OTP. Check server logs.'], 500);
             }
         }
 
+        // 3. Return parameters for the next view/state
         return response()->json([
             'message' => $message,
             'next_step' => 'verification',
@@ -286,8 +258,8 @@ class DynamicLoginController extends Controller
             'login_key' => 'required|string',
             'credential' => 'required|string', // password or OTP
             'step_2_method' => ['required', 'string', 'in:password,otp'],
-            'business_id' => 'required',
-            'role' => 'required|string',
+            'business_id' => 'nullable',
+            'role' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -315,6 +287,7 @@ class DynamicLoginController extends Controller
 
         // Password Login (for email)
         if ($step2Method === 'password') {
+            // NOTE: Use $user->password field for Hash::check. Assuming User model has a 'password' field.
             if ($loginKeyType === 'email' && Auth::attempt(['email' => $loginKey, 'password' => $inputCredential])) {
                 $isLoggedIn = true;
             } else if ($loginKeyType === 'phone') {
@@ -327,19 +300,13 @@ class DynamicLoginController extends Controller
                 return response()->json(['message' => 'Only Password method is allowed for email login.'], 401);
             }
 
-            // Verify OTP using the service
+            // Verify OTP using the service (using $user->phone which should be the database value)
             $otpAttempt = $this->otpService->verifyOtp($user->phone, $inputCredential, 'login');
 
             if ($otpAttempt) {
-                // OTP successful
-                // We must log the user in AND set the selected context (business/role) in the session
                 Auth::login($user);
+                // Mark OTP as used
                 $this->otpService->markOtpAsUsed($otpAttempt);
-
-                // Store the selected profile context in session
-                $request->session()->put('current_business_id', $businessId);
-                $request->session()->put('current_role', $role);
-
                 $isLoggedIn = true;
             }
         }
@@ -347,11 +314,16 @@ class DynamicLoginController extends Controller
         // Final login result
         if ($isLoggedIn) {
             $request->session()->regenerate();
-            // Assuming 'dashboard' is the correct redirect route after successful login
-            $redirectUrl = route('dashboard');
+            // Store the selected profile context in session
+            $request->session()->put('current_business_id', $businessId);
+            $request->session()->put('current_role', $role);
+
+            // NOTE: Replace 'dashboard' with your actual route name
+            $redirectUrl = '/dashboard';
 
             return response()->json([
-                'message' => "Successfully logged in as '{$role}' at Business ID '{$businessId}'. Redirecting...",
+                //'message' => "Successfully logged in as '{$role}' at Business ID '{$businessId}'. Redirecting...",
+                'message' => "Successfully logged in as. Redirecting...",
                 'redirect_url' => $redirectUrl,
             ], 200);
         }

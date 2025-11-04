@@ -5,23 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class UserType extends Model
+class UserLoginPlatform extends Model
 {
+    // user_login_platforms table
     protected $fillable = [
         'name',
-        'display_name',
-        'dashboard_key',
-        'login_template_key',
+        'platform_key',
+        'platform_hash_key',
         'login_template_hash_key',
-        'status'
+        'status',
     ];
 
     protected $casts = [
+        // Crucial for JSON field validation
+        'login_template_hash_key' => 'array',
         'status' => 'boolean',
     ];
-
-    public function profiles(): HasMany
-    {
-        return $this->hasMany(UserProfile::class);
-    }
 }

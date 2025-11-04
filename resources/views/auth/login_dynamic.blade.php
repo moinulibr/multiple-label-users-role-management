@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -66,6 +65,8 @@
             <input type="hidden" id="business-id-input" name="business_id">
             <input type="hidden" id="role-input" name="role">
             <input type="hidden" id="login-key-value-input" name="login_key_value">
+            <!-- Mandatory: Platform Key Input (Set by the client environment, e.g., 'WEB_ADMIN_PANEL_KEY') -->
+            <input type="hidden" id="login-platform-hash-key-input" name="platform_hash_key" value="5eaaf16a98fae359e253d21e6bccb2c2">
 
             <!-- 1. Step 1: Key Input (Email/Phone) -->
             <div id="step-1" class="form-container active">
@@ -87,21 +88,6 @@
                 </button>
             </div>
 
-            <!-- 2. Step 2: Profile Selection -->
-            <div id="step-2-profile-selection" class="form-container space-y-4">
-                <h3 class="text-lg font-semibold text-gray-800">Select Your Business/Role</h3>
-                <div id="profiles-list" class="space-y-2 border border-gray-200 rounded-md p-3 max-h-60 overflow-y-auto">
-                    <!-- Dynamic profile list goes here -->
-                </div>
-                <button type="button" id="select-profile-button" onclick="handleProfileSelection()"
-                    class="w-full mt-4 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-                    disabled>
-                    Continue to Verification
-                    <span id="profile-loading-spinner" class="hidden ml-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                </button>
-            </div>
-
-
             <!-- 3. Step 3: Verification (Password/OTP) -->
             <div id="step-3-verification" class="form-container space-y-6">
                 <!-- Dynamic Label and Input -->
@@ -116,7 +102,7 @@
                             <button type="button" id="change-key-button"
                                 class="text-indigo-600 hover:text-indigo-800 text-sm font-medium whitespace-nowrap"
                                 onclick="goToStep1()">
-                                Change   <span id="login-key-display" class="text-xs text-indigo-600 font-semibold"></span>
+                                Change <span id="login-key-display" class="text-xs text-indigo-600 font-semibold"></span>
                             </button>
                         </div>
                     </div>
@@ -142,7 +128,9 @@
         </form>
     </div>
 
+
     <script>
+        const loginPlatformKeyInput = document.getElementById('login-platform-hash-key-input');
         const form = document.getElementById('login-form');
         const loginKeyInput = document.getElementById('login-key');
         const credentialInput = document.getElementById('credential');
@@ -215,12 +203,7 @@
                 document.getElementById('login-heading').textContent = 'Dynamic Login';
                 document.getElementById('login-subheading').textContent = 'Start with your email or phone number';
                 checkLoginKey();
-            } else if (step === 2) {
-                document.getElementById('step-2-profile-selection').classList.add('active');
-                changeKeyButton.classList.remove('hidden');
-                document.getElementById('login-heading').textContent = 'Select Profile';
-                document.getElementById('login-subheading').textContent = 'Please choose your Business/Role';
-            } else if (step === 3) {
+            }else if (step === 2) {
                 document.getElementById('step-3-verification').classList.add('active');
                 changeKeyButton.classList.remove('hidden');
                 document.getElementById('login-heading').textContent = 'Verify Identity';
@@ -233,7 +216,7 @@
             nextButton.disabled = key.length < 5;
         }
 
-        // --- Step 1 & 2 & 3: Go Back Functionality (FIX) ---
+        // --- Step 1 & 2: Go Back Functionality (FIX) ---
         window.goToStep1 = function() {
             setStep(1);
             clearMessage();
@@ -245,35 +228,7 @@
             checkLoginKey();
         }
 
-        // --- Step 2: Profile Selection & Rendering ---
-        function renderProfiles(profiles) {
-            profilesList.innerHTML = '';
-            selectedProfile = null;
-            selectProfileButton.disabled = true;
-
-            profiles.forEach((profile, index) => {
-                const element = document.createElement('div');
-                element.className = 'profile-option p-3 border rounded-md flex justify-between items-center text-gray-700 hover:border-indigo-400 transition duration-200';
-                element.innerHTML = `
-                    <div>
-                        <div class="font-semibold">${profile.business_name}</div>
-                        <div class="text-sm text-gray-500">${profile.role}</div>
-                    </div>
-                    <input type="radio" name="profile_selection" value="${index}" class="form-radio text-indigo-600 h-4 w-4">
-                `;
-                element.onclick = () => {
-                    document.querySelectorAll('input[name="profile_selection"]').forEach(input => input.checked = false);
-                    element.querySelector('input[name="profile_selection"]').checked = true;
-                    selectProfileButton.disabled = false;
-                    selectedProfile = profile;
-                };
-                profilesList.appendChild(element);
-            });
-            setStep(2);
-        }
-
-        // --- Step 3: Credential Validation ---
-
+        // --- Step 2: Credential Validation ---
         function checkCredentialInput() {
             const val = credentialInput.value.trim();
             const isOTP = step2MethodInput.value === 'otp';
@@ -300,10 +255,10 @@
             credentialInput.type = isOTP ? 'text' : 'password';
             credentialInput.placeholder = isOTP ? 'Enter 4 or 6-digit OTP' : 'Enter your password';
             credentialLabel.textContent = isOTP ? 'OTP' : 'Password';
-            loginKeyDisplay.textContent = `${data.login_key_type === 'phone' ? 'Phone' : 'Email'}: ${data.login_key_value} (${data.role} @ ${data.business_id})`;
+            loginKeyDisplay.textContent = `${data.login_key_type === 'phone' ? 'Phone' : 'Email'}: ${data.login_key_value}`;
 
             checkCredentialInput();
-            setStep(3);
+            setStep(2);
             showMessage(data.message, 'success');
         }
 
@@ -327,7 +282,8 @@
                         'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
                     },
                     body: JSON.stringify({
-                        login_key: key
+                        login_key: key,
+                        platform_hash_key: loginPlatformKeyInput.value
                     })
                 });
 
@@ -337,11 +293,7 @@
                     loginKeyValueInput.value = data.login_key_value || key; // Save normalized key
                     userIdInput.value = data.user_id;
 
-                    if (data.next_step === 'profile_selection') {
-                        // Go to Step 2: Profile Selection
-                        renderProfiles(data.profiles);
-                        showMessage(data.message, 'warning');
-                    } else if (data.next_step === 'verification') {
+                    if (data.next_step === 'verification') {
                         // Go directly to Step 3: Verification
                         setVerificationFields(data);
                     }
@@ -358,60 +310,11 @@
             }
         }
 
-        // Step 2: Select Profile
-        async function handleProfileSelection() {
-            clearMessage();
-            setLoading('select-profile-button', true);
-
-            if (!selectedProfile) {
-                showMessage('Please select a profile to continue.', 'warning');
-                setLoading('select-profile-button', false);
-                return;
-            }
-
-            const payload = {
-                user_id: userIdInput.value,
-                login_key_value: loginKeyValueInput.value,
-                login_key_type: loginKeyTypeInput.value,
-                business_id: selectedProfile.business_id,
-                role: selectedProfile.role,
-            };
-
-            const url = BASE_URL.endsWith('/') ? BASE_URL + 'login/select-profile' : BASE_URL + '/login/select-profile';
-
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.next_step === 'verification') {
-                    // Go to Step 3: Verification
-                    setVerificationFields(data);
-                } else {
-                    showMessage(data.message || 'Profile selection failed.', 'error');
-                }
-
-            } catch (error) {
-                showMessage('Network error or unexpected response from server.', 'error');
-                console.error('Error during selectProfile:', error);
-            } finally {
-                setLoading('select-profile-button', false);
-            }
-        }
-
-
-        // Step 3: Finalize Login
+        // Step 2: Finalize Login
         async function handleFinalizeLogin() {
             clearMessage();
             setLoading('login-button', true);
-
+            loginButton.disabled = true;
             const payload = {
                 login_key: loginKeyValueInput.value,
                 credential: credentialInput.value.trim(),
@@ -435,17 +338,20 @@
                 const data = await response.json();
 
                 if (response.ok) {
+                    loginButton.disabled = true;
                     showMessage(data.message, 'success');
                     // Redirect on success
                     setTimeout(() => {
                         window.location.href = data.redirect_url;
-                    }, 1500);
+                    }, 1000);
                 } else {
+                    loginButton.disabled = false;
                     // Display error message
                     showMessage(data.message || 'Login failed.', 'error');
                 }
 
             } catch (error) {
+                loginButton.disabled = false;
                 showMessage('Network error or unexpected response from server.', 'error');
                 console.error('Error during finalizeLogin:', error);
             } finally {

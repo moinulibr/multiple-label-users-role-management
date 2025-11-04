@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Business;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\UserLoginPlatform;
 use App\Models\UserType;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -94,7 +95,7 @@ class InitialDataSeeder extends Seeder
         $primeBusiness = Business::firstOrCreate(['name' => 'Software Prime Ownership'], [
             'is_prime' => true,
             'business_type' => 2, // Company
-            // 💡 Using the correct User ID now
+            //Using the correct User ID now
             'owner_user_id' => $createdUsers['admin_user']->id,
             'slug' => 'prime-software',
             'email' => 'prime@software.com',
@@ -105,7 +106,7 @@ class InitialDataSeeder extends Seeder
         $tenantBusiness = Business::firstOrCreate(['name' => 'Rent Management Corp'], [
             'is_prime' => false,
             'business_type' => 2,
-            // 💡 Using the correct User ID now
+            //Using the correct User ID now
             'owner_user_id' => $createdUsers['rent_owner_user']->id,
             'slug' => 'rent-corp',
             'email' => 'info@rentcorp.com',
@@ -133,13 +134,13 @@ class InitialDataSeeder extends Seeder
 
         // This step depends on User, Business, and Role IDs being available.
         $assignments = [
-            'admin_user' => ['role' => $superAdminRole, 'business' => $primeBusiness->id, 'is_primary' => true, 'type' => 'super_admin'],
-            'rent_owner_user' => ['role' => $tenantOwnerRole, 'business' => $tenantBusiness->id, 'is_primary' => true, 'type' => 'rent_owner'],
-            'car_owner_user' => ['role' => $carOwnerRole, 'business' => $tenantBusiness->id, 'is_primary' => false, 'type' => 'car_owner'],
-            'driver_user' => ['role' => $driverRole, 'business' => $tenantBusiness->id, 'is_primary' => false, 'type' => 'driver'],
-            'staff_user' => ['role' => $staffRole, 'business' => $tenantBusiness->id, 'is_primary' => false, 'type' => 'staff'],
-            'referral_user' => ['role' => $referralRole, 'business' => null, 'is_primary' => true, 'type' => 'referral'],
-            'customer_user' => ['role' => $customerRole, 'business' => null, 'is_primary' => true, 'type' => 'customer'],
+            'admin_user' => ['role' => $superAdminRole, 'business' => $primeBusiness->id, 'default_login' => true, 'type' => 'super_admin'],
+            'rent_owner_user' => ['role' => $tenantOwnerRole, 'business' => $tenantBusiness->id, 'default_login' => true, 'type' => 'rent_owner'],
+            'car_owner_user' => ['role' => $carOwnerRole, 'business' => $tenantBusiness->id, 'default_login' => false, 'type' => 'car_owner'],
+            'driver_user' => ['role' => $driverRole, 'business' => $tenantBusiness->id, 'default_login' => false, 'type' => 'driver'],
+            'staff_user' => ['role' => $staffRole, 'business' => $tenantBusiness->id, 'default_login' => false, 'type' => 'staff'],
+            'referral_user' => ['role' => $referralRole, 'business' => null, 'default_login' => true, 'type' => 'referral'],
+            'customer_user' => ['role' => $customerRole, 'business' => null, 'default_login' => true, 'type' => 'customer'],
         ];
 
         foreach ($assignments as $userKey => $data) {
@@ -153,7 +154,7 @@ class InitialDataSeeder extends Seeder
                     'business_id' => $data['business']
                 ],
                 [
-                    'is_primary' => $data['is_primary'],
+                    'default_login' => $data['default_login'],
                     'status' => 1
                 ]
             );
@@ -163,5 +164,61 @@ class InitialDataSeeder extends Seeder
                 $data['role']->id => ['business_id' => $data['business']]
             ]);
         }
+
+        $loginPlatforms = [
+            [
+                'name' => 'Web Admin Panel',
+                'platform_key' => 'WEB_ADMIN_PANEL_KEY',
+                'platform_hash_key' => '5eaaf16a98fae359e253d21e6bccb2c2',  // Frontend will send this string
+                // This array contains the hash keys of roles (from user_types) allowed to log in via this platform.
+                'login_template_hash_key' => [
+                    'ed49c3fed75a513a79cb8bd1d4715d57',
+                    'e8b57d0da4580dc2ca4e10512f0cab39',
+                    '2e768fdf59df1b11930dcbb9a257f62f',
+                    'e2d45d57c7e2941b65c6ccd64af4223e',
+                    '1253208465b1efa876f982d8a9e73eef',
+                    '91ec1f9324753048c0096d036a694f86',
+                    'cd9bcdcbf9ef392bb2bce89a7c150638'
+                ],
+                'status' => true,
+            ],
+            [
+                'name' => 'Web Admin Login Panel',
+                'platform_key' => 'WEB_ADMIN_PANEL_KEY',
+                'platform_hash_key' => '5eaaf16a98fae359e253d21e6bccb2c2',  // Frontend will send this string
+                // This array contains the hash keys of roles (from user_types) allowed to log in via this platform.
+                'login_template_hash_key' => [
+                    'ed49c3fed75a513a79cb8bd1d4715d57',
+                    'e8b57d0da4580dc2ca4e10512f0cab39',
+                    '2e768fdf59df1b11930dcbb9a257f62f',
+                    'e2d45d57c7e2941b65c6ccd64af4223e',
+                    '1253208465b1efa876f982d8a9e73eef',
+                    '91ec1f9324753048c0096d036a694f86',
+                    'cd9bcdcbf9ef392bb2bce89a7c150638'
+                ],
+                'status' => false,
+            ],
+            [
+                'name' => 'Web Customer Panel',
+                'platform_key' => 'WEB_CUSTOMER_PANEL_KEY',
+                'platform_hash_key' => '7be04cc5d13f672a4568074ebbb8fa92', // Frontend will send this string
+                // This array contains the hash keys of roles (from user_types) allowed to log in via this platform.
+                'login_template_hash_key' => ['91ec1f9324753048c0096d036a694f86'],
+                'status' => true,
+            ],
+            [
+                'name' => 'Web Referral Panel',
+                'platform_key' => 'WEB_REFERRAL_PANEL_KEY',
+                'platform_hash_key' => '4568bd6bc631892dcda255e07ee9b3fa', // Frontend will send this string
+                // This array contains the hash keys of roles (from user_types) allowed to log in via this platform.
+                'login_template_hash_key' => ['cd9bcdcbf9ef392bb2bce89a7c150638'],
+                'status' => true,
+            ]
+        ];
+
+        foreach ($loginPlatforms as $platform) {
+            UserLoginPlatform::firstOrCreate(['name' => $platform['name']], $platform);
+        }
+
     }
 }

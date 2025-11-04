@@ -13,6 +13,7 @@ class Business extends Model
         'business_type',
         'parent_business_id',
         'owner_user_id',
+        'default_login',
         'name',
         'slug',
         'email',
@@ -26,6 +27,7 @@ class Business extends Model
 
     protected $casts = [
         'is_prime' => 'boolean',
+        'default_login' => 'boolean',
         'can_manage_roles' => 'boolean',
         'status' => 'boolean',
     ];
@@ -40,7 +42,6 @@ class Business extends Model
         return $this->hasMany(UserProfile::class);
     }
 
-    // সাব-বিজনেস রিলেশন
     public function parentBusiness(): BelongsTo
     {
         return $this->belongsTo(Business::class, 'parent_business_id');
