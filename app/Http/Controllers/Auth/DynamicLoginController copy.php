@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash; // For password verification in a real app
 use Illuminate\Support\Facades\Log; // Changed to Log for better practice
 
-class DynamicLoginController extends Controller
+class DynamicLoginControllerCopy extends Controller
 {
     protected OtpService $otpService;
 
@@ -102,7 +102,7 @@ class DynamicLoginController extends Controller
         $normalizedPhone = $this->normalizePhone($phone);
         $lastTenDigits = substr($normalizedPhone, -10);
 
-        $user = User::where('phone', $normalizedPhone)->where('status',true)->first();
+        $user = User::where('phone', $normalizedPhone)->where('status', true)->first();
         if (!$user) {
             $user = User::where(function ($query) use ($lastTenDigits) {
                 $query->where('phone', 'like', '%' . $lastTenDigits)
@@ -168,27 +168,26 @@ class DynamicLoginController extends Controller
         //Log::info("users business count- " . $business->count());
         //Log::info("users business get- " . json_encode($business->get()));
         //Log::info("users business first- " . json_encode($business->first()));
-       
-        $defaultBusiness = NULL; 
-        if($business->count() && $business->count() == 1){
+
+        $defaultBusiness = NULL;
+        if ($business->count() && $business->count() == 1) {
             $defaultBusiness = $business->first();
-        }
-        else if($business->count() && $business->count() > 1){
+        } else if ($business->count() && $business->count() > 1) {
             $defaultBusiness = $business->where('default_login', true)->first();
-        }else{
+        } else {
             $defaultBusiness = NULL;
         }
 
         $defaultProfile = NULL;
-        $userProfile = UserProfile::query()->where('user_id', $user->id)->where('status',true);
-        if($defaultBusiness){
+        $userProfile = UserProfile::query()->where('user_id', $user->id)->where('status', true);
+        if ($defaultBusiness) {
             $defaultProfile = $userProfile->where('business_id', $defaultBusiness->id)
                 ->where('default_login', true)
                 ->first();
-        }else{
+        } else {
             $defaultProfile = $userProfile->where('default_login', true)->first();
         }
-        if(!$defaultProfile){
+        if (!$defaultProfile) {
             return response()->json(['message' => 'Error: No associated active profile found for this user.', 'next_step' => 'error'], 403);
         }
         //Log::info("users user type- " . json_encode($defaultProfile->userType->login_template_hash_key));
@@ -201,13 +200,12 @@ class DynamicLoginController extends Controller
         if (!in_array($userTypeLoginTemplateHashKey, $allowedTemplateHashes)) {
             return response()->json(['message' => "Error: Your profile ({$defaultProfile->userType->display_name}) is not authorized for this platform.", 'next_step' => 'error'], 403);
         }
-        
+
         $selectedProfile = [
             'business_id' => $defaultBusiness ? $defaultBusiness->id : NULL,
             'role' => "admin",
         ];
         return $this->processVerificationStep($user, $loginKeyValue, $loginKeyType, $selectedProfile);
-
     }
 
 
@@ -333,14 +331,15 @@ class DynamicLoginController extends Controller
         return response()->json(['message' => $errorMsg], 401);
     }
 
-    public function resendOtp(Request $request){
+    public function resendOtp(Request $request)
+    {
         $request->validate([
             'login_key' => 'required|string', // The phone number used
             'login_key_type' => ['required', 'string', 'in:phone'],
             'business_id' => 'nullable',
             'role' => 'nullable|string',
         ]);
-        
+
         $loginKeyValue = $request->login_key;
 
         // Since we are resending OTP, we assume it's always a phone login

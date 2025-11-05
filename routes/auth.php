@@ -49,6 +49,8 @@ Route::middleware('guest')->group(function () {
 
     // ডিফল্ট লগইন রাউটটি এখন ডাইনামিক পেজে যাবে
     Route::get('login-new', [DynamicLoginController::class, 'showLoginForm'])->name('login');
+
+    Route::post('/login/resend-otp', [DynamicLoginController::class, 'resendOtp']);
 });
 
 
