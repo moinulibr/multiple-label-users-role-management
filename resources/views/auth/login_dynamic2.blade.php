@@ -273,7 +273,7 @@
             // Handle Resend OTP button visibility and timer
             if (isOTP) {
                 resendOtpButton.classList.remove('hidden');
-                startResendTimer(60); 
+                startResendTimer(10); 
             } else {
                 resendOtpButton.classList.add('hidden');
             }
@@ -387,7 +387,7 @@
                 console.log('Resend OTP Response:', data);
                 if (response.ok) {
                     showMessage(data.message || 'New OTP sent successfully! (Check server logs)', 'success');
-                    startResendTimer(60); 
+                    startResendTimer(10); 
                 } else {
                     showMessage(data.message || 'Failed to resend OTP. Check Resend route.', 'error');
                     resendOtpButton.disabled = false; 

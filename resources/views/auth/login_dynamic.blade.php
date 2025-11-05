@@ -549,7 +549,6 @@
                 loginHeading.textContent = 'Sign in to your Account';
                 loginSubheading.textContent = 'Enter your email or phone number';
                 
-                // স্টেপ ১ এবং ২ এর Change/Retype? বাটন লুকান (স্টেপ ১ এ এটি দেখাবে না)
                 changeKeyButtonStep2.classList.add('cual-hidden');
                 changeKeyButtonStep1.classList.add('cual-hidden');
 
@@ -561,7 +560,6 @@
                 loginHeading.textContent = 'Verify Identity';
                 loginSubheading.textContent = 'Enter your password or the OTP sent to your device.';
                 
-                // স্টেপ ২ এর Change/Retype? বাটন দেখান (স্টেপ ১ এর টি লুকানোই থাকবে)
                 changeKeyButtonStep1.classList.add('cual-hidden');
                 changeKeyButtonStep2.classList.remove('cual-hidden');
             }
@@ -617,7 +615,7 @@
                 // Phone (OTP)
                 passwordOptionsDiv.classList.add('cual-hidden'); 
                 otpOptionsDiv.classList.remove('cual-hidden'); 
-                startResendTimer(60);
+                startResendTimer(10);
             } else {
                 // Email (Password)
                 passwordOptionsDiv.classList.remove('cual-hidden'); 
@@ -641,13 +639,15 @@
                 timer--;
                 if (timer >= 0) {
                     resendTimerSpan.textContent = `: (${timer}s)`;
+                    resendOtpButton.textContent = `Resend OTP :  (${timer}s)`;
+                    timer--;
                 }
                 
                 if (timer < 0) {
                     clearInterval(resendTimer);
                     resendOtpButton.disabled = false;
                     resendOtpButton.textContent = 'Resend OTP'; // Changed text when timer ends
-                    resendTimerSpan.textContent = '';
+                    //resendTimerSpan.textContent = '';
                 }
             }, 1000);
         }
@@ -704,6 +704,8 @@
             resendOtpButton.textContent = 'Resending...';
             resendTimerSpan.textContent = '';
 
+            startResendTimer(10);
+            
             const url = BASE_URL.endsWith('/') ? BASE_URL + 'login/resend-otp' : BASE_URL + '/login/resend-otp';
 
             try {
@@ -726,14 +728,19 @@
                 
                 if (response.ok) {
                     showMessage(data.message || 'New OTP sent successfully! (Check server logs)', 'success');
-                    startResendTimer(60);
+                    resendOtpButton.textContent = 'Resend OTP';
                 } else {
                     showMessage(data.message || 'Failed to resend OTP. Check Resend route.', 'error');
+                    // Stop the timer if fail
+                    clearInterval(resendTimer);
+                    resendTimerSpan.textContent = '';
                     resendOtpButton.disabled = false;
                     resendOtpButton.textContent = 'Resend OTP';
                 }
             } catch (error) {
                 showMessage('Network error during Resend OTP.', 'error');
+                clearInterval(resendTimer);
+                resendTimerSpan.textContent = '';
                 resendOtpButton.disabled = false;
                 resendOtpButton.textContent = 'Resend OTP';
             }
@@ -771,10 +778,8 @@
                 if (response.ok) {
                     showMessage(data.message, 'success');
                     
-                    // *** এখানে পরিবর্তন করা হয়েছে ***
-                    // সফল হলে বাটনটি ডিসেবল রাখা এবং স্পিনার দেখানো
                     loginButton.disabled = true; 
-                    setLoading('cual-login-button', true); // স্পিনার দেখানো নিশ্চিত করা হলো
+                    setLoading('cual-login-button', true);
                     clearInterval(resendTimer);
 
                     setTimeout(() => {
@@ -784,7 +789,7 @@
                     showMessage(data.message || 'Login failed. Invalid credential.', 'error');
                     credentialInput.value = ''; 
                     checkCredentialInput(); 
-                    setLoading('cual-login-button', false); // ব্যর্থ হলে বাটন আবার এনাবল করা
+                    setLoading('cual-login-button', false); 
                 }
 
             } catch (error) {
