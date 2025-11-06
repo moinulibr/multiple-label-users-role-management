@@ -63,7 +63,7 @@ class RoleController extends Controller
 
     public function destroy(Role $role)
     {
-        if ($role->is_system) {
+        if ($role->is_special) {
             return back()->with('error', 'System role cannot be deleted');
         }
         $role->delete();

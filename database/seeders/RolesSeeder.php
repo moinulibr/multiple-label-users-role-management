@@ -9,7 +9,6 @@ class RolesSeeder extends Seeder
 {
     public function run(): void
     {
-        // Config থেকে permissions নিয়ে আসা
         $permissionsConfig = config('app_permissions.modules', []);
 
         $allPermissions = [];
@@ -26,7 +25,7 @@ class RolesSeeder extends Seeder
             'name' => 'super_admin',
             'display_name' => 'Super Administrator',
             'permissions' => json_encode($allPermissions),
-            'is_system' => true,
+            'is_special' => true,
         ]);
     }
 }

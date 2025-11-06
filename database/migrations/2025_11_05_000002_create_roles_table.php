@@ -14,7 +14,7 @@ return new class extends Migration {
             $table->string('display_name')->nullable();
             $table->text('description')->nullable();
             $table->json('permissions')->nullable()->comment('config-based permission list');
-            $table->boolean('is_system')->default(false)->comment('system/global role (e.g., super_admin)');
+            $table->boolean('is_special')->default(false)->comment('system/global role (e.g., super_admin)');
             $table->timestamps();
 
             // unique per business (business_id + name) ensures tenants can reuse role names
