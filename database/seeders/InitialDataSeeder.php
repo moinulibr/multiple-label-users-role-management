@@ -94,6 +94,7 @@ class InitialDataSeeder extends Seeder
         // A. Prime System Business
         $primeBusiness = Business::firstOrCreate(['name' => 'Software Prime Ownership'], [
             'is_prime' => true,
+            'hierarchy_level' => 'primary',
             'business_type' => 2, // Company
             //Using the correct User ID now
             'user_id' => $createdUsers['admin_user']->id,
