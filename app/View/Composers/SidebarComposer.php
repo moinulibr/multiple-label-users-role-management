@@ -15,54 +15,43 @@ class SidebarComposer
     public function compose(View $view)
     {
         $user = Auth::user();
-
-        // 1. If the user is not authenticated, return an empty menu
         if (!$user) {
             $view->with('menuItems', []);
             return;
         }
 
-        // config('sidebar') data load from config
-        $menuConfig = config('sidebar');
-        $filteredMenu = [];
+        $menuConfig = config('sidebar'); // your existing config
+        $businessId = session('current_business_id');
 
+        $filtered = [];
         foreach ($menuConfig as $item) {
             $mainPermission = $item['permission'] ?? null;
-            $canSeeMainItem = true;
+            $showMain = true;
 
-            // check main permission exists
-            if ($mainPermission && !$user->can($mainPermission)) {
-                $canSeeMainItem = false;
+            if ($mainPermission && !$user->hasPermission($mainPermission, $businessId)) {
+                $showMain = false;
             }
 
-            //2. handle submenu
             if (isset($item['submenu'])) {
-                $filteredSubmenu = [];
-
-                //filter every submenu
-                foreach ($item['submenu'] as $subItem) {
-                    $subPermission = $subItem['permission'] ?? null;
-
-                    if (!$subPermission || $user->can($subPermission)) {
-                        $filteredSubmenu[] = $subItem;
+                $subs = [];
+                foreach ($item['submenu'] as $sub) {
+                    $subPerm = $sub['permission'] ?? null;
+                    if (!$subPerm || $user->hasPermission($subPerm, $businessId)) {
+                        $subs[] = $sub;
                     }
                 }
-
-                $item['submenu'] = $filteredSubmenu;
-
-                // if there is only one item in the submenu, show the main menu
+                $item['submenu'] = $subs;
                 if (!empty($item['submenu'])) {
-                    $filteredMenu[] = $item;
-                    continue; // Go to the next iteration
+                    $filtered[] = $item;
+                    continue;
                 }
             }
 
-            //3. if single item exists and permission exists, then added 
-            if ($canSeeMainItem && !isset($item['submenu'])) {
-                $filteredMenu[] = $item;
+            if ($showMain && !isset($item['submenu'])) {
+                $filtered[] = $item;
             }
         }
 
-        $view->with('menuItems', $filteredMenu);
+        $view->with('menuItems', $filtered);
     }
 }

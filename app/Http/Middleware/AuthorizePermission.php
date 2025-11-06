@@ -4,36 +4,41 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Auth; 
-use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Auth;
+use App\Services\PermissionService;
+use Illuminate\Support\Facades\Log;
 
 class AuthorizePermission
 {
-    public function handle(Request $request, Closure $next, string $permission): Response
+    public function handle(Request $request, Closure $next, string $permission)
     {
+        // 🔹 Step 1: Check authentication
         if (Auth::guest()) {
-            // 401 Unauthorized for API/AJAX
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Unauthenticated.'], 401);
             }
-            // redirect
             return redirect()->route('login');
         }
 
-        // Authorization Check
-        if (Gate::denies($permission)) {
+        //Log::info("middleware parmission - " . $permission);
+        //Log::info("middleware parmission within service - " . PermissionService::check($permission));
+        
+        // 🔹 Step 2: Permission check
+        if (!PermissionService::check($permission)) {
+            $message = "Access denied: Missing permission [{$permission}]";
 
-            // 403 Forbidden for API/AJAX
             if ($request->expectsJson()) {
                 return response()->json([
-                    'message' => 'You do not have the required permission to perform this action.',
-                    'permission_required' => $permission
+                    'message' => $message,
+                    'permission_required' => $permission,
                 ], 403);
             }
-            return redirect()->route('dashboard')->with('error', "Access Denied. You lack the permission: {$permission}");
+
+            return redirect()->route('dashboard')
+                ->with('error', $message);
         }
 
+        // ✅ Step 3: Continue request
         return $next($request);
     }
 }

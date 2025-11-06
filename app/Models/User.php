@@ -4,7 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
-use App\Traits\HasCustomPermissions;
+use App\Traits\HasRolesAndPermissions;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,9 +16,19 @@ use Illuminate\Support\Str;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasCustomPermissions;
+    use HasFactory, Notifiable, HasRolesAndPermissions;
 
     protected $with = ['roles'];
+    // Roles relationship
+    public function roles()
+    {
+        return $this->belongsToMany(
+            Role::class,
+            'role_user',
+            'user_id',
+            'role_id'
+        )->withPivot('business_id')->withTimestamps();
+    }
     
     /**
      * The attributes that are mass assignable.

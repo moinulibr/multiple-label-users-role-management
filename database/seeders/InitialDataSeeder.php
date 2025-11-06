@@ -118,15 +118,15 @@ class InitialDataSeeder extends Seeder
         // =========================================================
 
         // System-wide Roles (business_id = NULL)
-        $superAdminRole = Role::firstOrCreate(['name' => 'super_admin', 'business_id' => null], ['display_name' => 'Super Administrator', 'permissions' => ['system.all']]);
-        $customerRole = Role::firstOrCreate(['name' => 'general_customer', 'business_id' => null], ['display_name' => 'Customer Access', 'permissions' => ['customer.view_history']]);
-        $referralRole = Role::firstOrCreate(['name' => 'general_referral', 'business_id' => null], ['display_name' => 'Referral Program Access', 'permissions' => ['referral.dashboard']]);
+        $superAdminRole = Role::firstOrCreate(['name' => 'super_admin', 'business_id' => null], ['display_name' => 'Super Administrator']);
+        $customerRole = Role::firstOrCreate(['name' => 'general_customer', 'business_id' => null], ['display_name' => 'Customer Access']);
+        $referralRole = Role::firstOrCreate(['name' => 'general_referral', 'business_id' => null], ['display_name' => 'Referral Program Access']);
 
         // Tenant Business Roles (business_id = $tenantBusiness->id)
-        $tenantOwnerRole = Role::firstOrCreate(['name' => 'tenant_owner', 'business_id' => $tenantBusiness->id], ['display_name' => 'Business Owner Role (Tenant)', 'permissions' => ['tenant.manage_all']]);
-        $carOwnerRole = Role::firstOrCreate(['name' => 'car_owner_role', 'business_id' => $tenantBusiness->id], ['display_name' => 'Car Owner Role (Tenant)', 'permissions' => ['car.view_own']]);
-        $driverRole = Role::firstOrCreate(['name' => 'driver_role', 'business_id' => $tenantBusiness->id], ['display_name' => 'Driver Role (Tenant)', 'permissions' => ['trip.view_assigned']]);
-        $staffRole = Role::firstOrCreate(['name' => 'staff_role', 'business_id' => $tenantBusiness->id], ['display_name' => 'Staff/Employee Role (Tenant)', 'permissions' => ['booking.manage']]);
+        $tenantOwnerRole = Role::firstOrCreate(['name' => 'tenant_owner', 'business_id' => $tenantBusiness->id], ['display_name' => 'Business Owner Role (Tenant)']);
+        $carOwnerRole = Role::firstOrCreate(['name' => 'car_owner_role', 'business_id' => $tenantBusiness->id], ['display_name' => 'Car Owner Role (Tenant)']);
+        $driverRole = Role::firstOrCreate(['name' => 'driver_role', 'business_id' => $tenantBusiness->id], ['display_name' => 'Driver Role (Tenant)']);
+        $staffRole = Role::firstOrCreate(['name' => 'staff_role', 'business_id' => $tenantBusiness->id], ['display_name' => 'Staff/Employee Role (Tenant)']);
 
         // =========================================================
         // 5. Profile and Role Assignment (LAST)

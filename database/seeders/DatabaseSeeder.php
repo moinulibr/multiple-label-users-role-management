@@ -18,6 +18,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             UserTypeSeeder::class, // প্রথমে User Types
             InitialDataSeeder::class, // তারপর বাকি সব ডেটা
+
+            RolesSeeder::class,
         ]);
 
         /* User::factory()->create([

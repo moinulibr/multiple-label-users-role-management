@@ -158,12 +158,12 @@
             <li><a class="dropdown-link-item" href="#"><i class="mdi mdi-diamond-stone"></i><span class="nav-text">Activities</span></a></li>
             <li><a class="dropdown-link-item" href="#"><i class="mdi mdi-settings"></i><span class="nav-text">Account Setting</span></a></li>
 
-            <li class="dropdown-footer">
+            <li class="dropdown-footer" style="text-align: left">
                 <!-- Logout Implementation for Laravel -->
                 <form method="POST" action="{{ route('logout') }}" id="logout-form-desktop" style="display: none;">
                     @csrf
                 </form>
-                <a class="dropdown-link-item" href="#" 
+                <a class="dropdown-link-item" href="#"  style="justify-content: left;"
                     onclick="event.preventDefault(); document.getElementById('logout-form-desktop').submit();"> 
                     <i class="mdi mdi-logout"></i> Log Out 
                 </a>

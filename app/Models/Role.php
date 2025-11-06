@@ -6,25 +6,31 @@ use Illuminate\Database\Eloquent\Model;
 
 class Role extends Model
 {
+
     protected $guarded = ['id'];
 
-    //convert to array from json field
-    protected $casts = [
-        'permissions' => 'array',
-    ];
+    public function business()
+    {
+        return $this->belongsTo(Business::class);
+    }
 
     public function users()
     {
-        return $this->belongsToMany(User::class, 'role_user');
+        return $this->belongsToMany(User::class, 'role_user')->withPivot('business_id')->withTimestamps();
     }
 
-    /**
-     * the permission is existing in the role
-     * @param string $permissionName
-     */
+    public function permissions()
+    {
+        return $this->belongsToMany(Permission::class, 'permission_role');
+    }
+
     public function hasPermissionTo(string $permissionName): bool
     {
-        // the permission is existing in the permissions
-        return in_array($permissionName, $this->permissions ?? []);
+        // check cached collection if loaded
+        if ($this->relationLoaded('permissions')) {
+            return $this->permissions->contains(fn($p) => $p->name === $permissionName);
+        }
+
+        return $this->permissions()->where('name', $permissionName)->exists();
     }
 }

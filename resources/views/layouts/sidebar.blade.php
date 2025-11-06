@@ -8,10 +8,27 @@
         pp\View\Composers\SidebarComposer - $menuItems
     --}}
 
+    @php $menu = config('sidebar'); $businessId = session('current_business_id'); @endphp
     <div class="sidebar-left" data-simplebar style="height: 100%;">
         <!-- sidebar menu -->
         <ul class="nav sidebar-inner" id="sidebar-menu">
-            
+            {{-- @foreach($menu as $item)
+                @php $perm = $item['permission'] ?? null; @endphp
+                @if(!$perm || auth()->user()->hasPermission($perm, $businessId))
+                    <li>
+                        <a href="{{ route($item['route'] ?? '#') }}">{{ $item['title'] }}</a>
+                        @if(!empty($item['submenu']))
+                            <ul>
+                            @foreach($item['submenu'] as $sub)
+                                @if(!isset($sub['permission']) || auth()->user()->hasPermission($sub['permission'], $businessId))
+                                    <li><a href="{{ route($sub['route']) }}">{{ $sub['title'] }}</a></li>
+                                @endif
+                            @endforeach
+                            </ul>
+                        @endif
+                    </li>
+                @endif
+            @endforeach --}}
             @foreach ($menuItems as $item)
 
                 @if (isset($item['submenu']))
@@ -53,7 +70,7 @@
                 @else
                     
                     <li class="{{ isset($item['route']) && request()->routeIs($item['route'] . '*') ? 'active' : '' }}">
-                        <a class="sidenav-item-link" href="{{ isset($item['route']) ? route($item['route']) : '#' }}">
+                        <a class="sidenav-item-link" href="{{-- {{ isset($item['route']) ? route($item['route']) : '#' }} --}}">
                             <i class="{{ $item['icon'] }}"></i>
                             <span class="nav-text">{{ __($item['title']) }}</span>
                         </a>

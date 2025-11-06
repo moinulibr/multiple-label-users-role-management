@@ -9,6 +9,7 @@ use App\Models\UserLoginPlatform;
 use App\Models\UserProfile;
 use App\Services\OtpService;
 use Illuminate\Http\Request;
+use App\Services\UserContextManager;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash; // For password verification in a real app
@@ -17,62 +18,15 @@ use Illuminate\Support\Facades\Log; // Changed to Log for better practice
 class DynamicLoginController extends Controller
 {
     protected OtpService $otpService;
+    protected UserContextManager $userContextManager;
 
     // Inject OtpService via constructor
-    public function __construct(OtpService $otpService)
+    public function __construct(OtpService $otpService, UserContextManager $userContextManager)
     {
         $this->otpService = $otpService;
+        $this->userContextManager = $userContextManager;
     }
 
-    /**
-     * Mock function to get user profiles (businesses and roles) and group them by business.
-     * NOTE: This is MOCK DATA. In a real application, you would use Eloquent relationships
-     * to fetch data from your `Business` and `UserProfile` models (which you mentioned).
-     *
-     * @param User $user
-     * @return array
-     */
-    protected function getProfilesForUser(User $user)
-    {
-        $allProfiles = [];
-
-        // Example mock logic: Assume user ID 1 and 2 have multiple profiles, others are general
-        if ($user->id == 1) {
-            $allProfiles = [
-                ['business_id' => 101, 'business_name' => 'Alpha Corp', 'role' => 'Administrator'],
-                ['business_id' => 102, 'business_name' => 'Beta Solutions', 'role' => 'Manager'],
-                ['business_id' => 101, 'business_name' => 'Alpha Corp', 'role' => 'Employee'],
-                ['business_id' => 103, 'business_name' => 'Gamma Tech', 'role' => 'Manager'],
-            ];
-        } elseif ($user->id == 2) {
-            $allProfiles = [
-                ['business_id' => 201, 'business_name' => 'Global Sales', 'role' => 'Sales'],
-            ];
-        } else {
-            // Default General/Single profile for all other users
-            $allProfiles = [
-                ['business_id' => 999, 'business_name' => 'General Account', 'role' => 'General'],
-            ];
-        }
-
-        // Group profiles by business
-        $groupedProfiles = [];
-        foreach ($allProfiles as $profile) {
-            $businessKey = $profile['business_id'];
-            if (!isset($groupedProfiles[$businessKey])) {
-                $groupedProfiles[$businessKey] = [
-                    'business_id' => $profile['business_id'],
-                    'business_name' => $profile['business_name'],
-                    'roles' => [],
-                ];
-            }
-            // Only add the role details to the roles array
-            $groupedProfiles[$businessKey]['roles'][] = $profile['role'];
-        }
-
-        // Return as a numerically indexed array
-        return array_values($groupedProfiles);
-    }
 
     protected function normalizePhone($phone)
     {
@@ -178,7 +132,7 @@ class DynamicLoginController extends Controller
         }else{
             $defaultBusiness = NULL;
         }
-
+        
         $defaultProfile = NULL;
         $userProfile = UserProfile::query()->where('user_id', $user->id)->where('status',true);
         if($defaultBusiness){
@@ -204,7 +158,8 @@ class DynamicLoginController extends Controller
         
         $selectedProfile = [
             'business_id' => $defaultBusiness ? $defaultBusiness->id : NULL,
-            'role' => "admin",
+            'profile' => $defaultProfile->id,
+            'role' => $defaultProfile->userType->display_name,
         ];
         return $this->processVerificationStep($user, $loginKeyValue, $loginKeyType, $selectedProfile);
 
@@ -242,6 +197,7 @@ class DynamicLoginController extends Controller
             'login_key_type' => $loginKeyType,
             'step_2_method' => $step2Method,
             'business_id' => $selectedProfile['business_id'],
+            'profile' => $selectedProfile['profile'],
             'role' => $selectedProfile['role'],
         ], 200);
     }
@@ -259,6 +215,7 @@ class DynamicLoginController extends Controller
             'credential' => 'required|string', // password or OTP
             'step_2_method' => ['required', 'string', 'in:password,otp'],
             'business_id' => 'nullable',
+            'profile' => 'required',
             'role' => 'nullable|string',
         ]);
 
@@ -271,6 +228,7 @@ class DynamicLoginController extends Controller
         $step2Method = $request->input('step_2_method');
         $businessId = $request->input('business_id');
         $role = $request->input('role');
+        $profile_id = $request->input('profile');
 
         $loginKeyType = filter_var($loginKey, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
 
@@ -311,16 +269,18 @@ class DynamicLoginController extends Controller
             }
         }
 
+        $userProfile = UserProfile::find($profile_id);
+
         // Final login result
         if ($isLoggedIn) {
-            $request->session()->regenerate();
+            $this->userContextManager->setContext($userProfile, $user);
+            //$request->session()->regenerate();
             // Store the selected profile context in session
-            $request->session()->put('current_business_id', $businessId);
-            $request->session()->put('current_role', $role);
+            //$request->session()->put('current_business_id', $businessId);
+            //$request->session()->put('current_role', $role);
 
             // NOTE: Replace 'dashboard' with your actual route name
             $redirectUrl = '/dashboard';
-
             return response()->json([
                 //'message' => "Successfully logged in as '{$role}' at Business ID '{$businessId}'. Redirecting...",
                 'message' => "Successfully logged in as. Redirecting...",

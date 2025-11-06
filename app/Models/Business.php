@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Business extends Model
 {
+    protected $guarded = ['id'];
     protected $fillable = [
         'is_prime',
         'business_type',
@@ -31,6 +32,24 @@ class Business extends Model
         'can_manage_roles' => 'boolean',
         'status' => 'boolean',
     ];
+
+    //start----new----
+    public function parent()
+    {
+        return $this->belongsTo(Business::class, 'parent_business_id');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(Business::class, 'parent_business_id');
+    }
+
+    public function roles()
+    {
+        return $this->hasMany(Role::class);
+    }
+    //end----new----
+
 
     public function owner(): BelongsTo
     {

@@ -1,32 +1,26 @@
 <?php
 
 namespace App\Providers;
+
+use App\Http\Middleware\AuthorizePermission;
+use App\View\Composers\SidebarComposer;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
-use App\View\Composers\SidebarComposer;
-use App\Http\Middleware\AuthorizePermission;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
         //
     }
 
-    /**
-     * Bootstrap any application services.
-     */
-    public function boot(): void
+    public function boot(Router $router): void
     {
-        // view composer registered here
-        // the SidebarComposer class will be run before rendering the 'layouts.sidebar' view
+        // View composer for sidebar
         View::composer('layouts.sidebar', SidebarComposer::class);
 
-        $router = $this->app->make(Router::class);
+        // Register alias for middleware
         $router->aliasMiddleware('permission', AuthorizePermission::class);
     }
 }

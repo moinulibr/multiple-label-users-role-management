@@ -355,6 +355,7 @@
             <input type="hidden" id="cual-user-id-input" name="user_id">
             <input type="hidden" id="cual-business-id-input" name="business_id">
             <input type="hidden" id="cual-role-input" name="role">
+            <input type="hidden" id="cual-profile-input" name="profile">
             <input type="hidden" id="cual-login-key-value-input" name="login_key_value">
             <input type="hidden" id="cual-login-platform-hash-key-input" name="platform_hash_key"
                 value="5eaaf16a98fae359e253d21e6bccb2c2">
@@ -493,6 +494,7 @@
         const userIdInput = document.getElementById('cual-user-id-input');
         const businessIdInput = document.getElementById('cual-business-id-input');
         const roleInput = document.getElementById('cual-role-input');
+        const profileInput = document.getElementById('cual-profile-input');
         const loginKeyValueInput = document.getElementById('cual-login-key-value-input');
         const loginHeading = document.getElementById('cual-login-heading');
         const loginSubheading = document.getElementById('cual-login-subheading');
@@ -558,7 +560,7 @@
             } else if (step === 2) {
                 document.getElementById('cual-step-3-verification').classList.add('active');
                 loginHeading.textContent = 'Verify Identity';
-                loginSubheading.textContent = 'Enter your password or the OTP sent to your device.';
+                loginSubheading.textContent = 'Enter the OTP sent to your device.';
                 
                 changeKeyButtonStep1.classList.add('cual-hidden');
                 changeKeyButtonStep2.classList.remove('cual-hidden');
@@ -601,9 +603,11 @@
             step2MethodInput.value = data.step_2_method;
             businessIdInput.value = data.business_id;
             roleInput.value = data.role;
+            profileInput.value = data.profile;
             loginKeyValueInput.value = data.login_key_value;
 
             // Set UI fields
+            credentialInput.autofocus = true
             credentialInput.type = isOTP ? 'text' : 'password';
             credentialInput.placeholder = isOTP ? 'Enter 4 or 6-digit OTP' : 'Enter your password';
             credentialLabel.textContent = isOTP ? 'OTP Code' : 'Password';
@@ -615,7 +619,7 @@
                 // Phone (OTP)
                 passwordOptionsDiv.classList.add('cual-hidden'); 
                 otpOptionsDiv.classList.remove('cual-hidden'); 
-                startResendTimer(10);
+                startResendTimer(60);
             } else {
                 // Email (Password)
                 passwordOptionsDiv.classList.remove('cual-hidden'); 
@@ -704,7 +708,7 @@
             resendOtpButton.textContent = 'Resending...';
             resendTimerSpan.textContent = '';
 
-            startResendTimer(10);
+            startResendTimer(60);
             
             const url = BASE_URL.endsWith('/') ? BASE_URL + 'login/resend-otp' : BASE_URL + '/login/resend-otp';
 
@@ -720,7 +724,8 @@
                         login_key_type: loginKeyTypeInput.value,
                         user_id: userIdInput.value,
                         business_id: businessIdInput.value,
-                        role: roleInput.value
+                        role: roleInput.value,
+                        profile: profileInput.value
                     })
                 });
 
@@ -756,6 +761,7 @@
                 step_2_method: step2MethodInput.value,
                 business_id: businessIdInput.value, 
                 role: roleInput.value, 
+                profile: profileInput.value
             };
 
             const url = BASE_URL.endsWith('/') ? BASE_URL + 'login/finalize' : BASE_URL + '/login/finalize';

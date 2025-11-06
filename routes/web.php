@@ -26,12 +26,14 @@ Route::middleware('auth')->prefix('profile')->name('profile.')->group(function (
 Route::middleware(['auth', 'permission:users.manage'])->prefix('admin')->name('admin.')->group(function () {
 
     Route::resource('roles', RoleController::class);
-
+    
     Route::resource('users', UserController::class);
+    Route::get('users/create', [UserController::class, 'create'])
+    ->name('users.create')->middleware('permission:users.create');
     //Route::resource('users', UserController::class)->except(['show']);
     Route::get('users/{user}/roles/assign', [UserController::class, 'assignRoleForm'])
         ->name('users.assignRoleForm')
-        ->middleware('permission:users.assign'); 
+        ->middleware('permission:users.assign');
     Route::post('users/{user}/roles/assign', [UserController::class, 'assignRoles'])
         ->name('users.assignRoles')
         ->middleware('permission:users.assign');
@@ -57,3 +59,8 @@ Route::middleware(['auth', 'permission:settings.manage'])->prefix('admin')->name
 
 //test repository
 Route::get('/testrepso', [TestController::class, 'index']);
+
+
+Route::get('/test', function () {
+    return auth()->user()->hasPermission('users.manage') ? 'OK' : 'NO';
+})->middleware('auth');
