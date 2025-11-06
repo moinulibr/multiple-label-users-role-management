@@ -88,7 +88,7 @@ class InitialDataSeeder extends Seeder
         }
 
         // =========================================================
-        // 3. Create Businesses (SECOND: now we have valid owner_user_id)
+        // 3. Create Businesses (SECOND: now we have valid user_id)
         // =========================================================
 
         // A. Prime System Business
@@ -96,7 +96,7 @@ class InitialDataSeeder extends Seeder
             'is_prime' => true,
             'business_type' => 2, // Company
             //Using the correct User ID now
-            'owner_user_id' => $createdUsers['admin_user']->id,
+            'user_id' => $createdUsers['admin_user']->id,
             'slug' => 'prime-software',
             'email' => 'prime@software.com',
             'can_manage_roles' => true,
@@ -107,7 +107,7 @@ class InitialDataSeeder extends Seeder
             'is_prime' => false,
             'business_type' => 2,
             //Using the correct User ID now
-            'owner_user_id' => $createdUsers['rent_owner_user']->id,
+            'user_id' => $createdUsers['rent_owner_user']->id,
             'slug' => 'rent-corp',
             'email' => 'info@rentcorp.com',
             'can_manage_roles' => true,

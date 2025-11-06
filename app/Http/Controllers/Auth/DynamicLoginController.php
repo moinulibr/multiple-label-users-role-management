@@ -118,7 +118,7 @@ class DynamicLoginController extends Controller
         $loginKeyValue = ($loginKeyType === 'phone' && $user) ? $user->phone : $loginKey;
 
         // 2. Find the User
-        $business = Business::query()->where('owner_user_id', $user->id)->where('status', true);
+        $business = Business::query()->where('user_id', $user->id)->where('status', true);
         //Log::info("users business count- " . $business->count());
         //Log::info("users business get- " . json_encode($business->get()));
         //Log::info("users business first- " . json_encode($business->first()));

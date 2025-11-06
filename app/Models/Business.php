@@ -13,7 +13,7 @@ class Business extends Model
         'is_prime',
         'business_type',
         'parent_business_id',
-        'owner_user_id',
+        'user_id',
         'default_login',
         'name',
         'slug',
@@ -53,7 +53,7 @@ class Business extends Model
 
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'owner_user_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function profiles(): HasMany
