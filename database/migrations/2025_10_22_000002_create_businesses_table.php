@@ -10,8 +10,8 @@ return new class extends Migration {
         Schema::create('businesses', function (Blueprint $table) {
             $table->id();
             $table->boolean('is_prime')->default(false)->comment('If true, its a software ownership, false = business ownership company [business ownership is under software ownership]');
-            $table->string('hierarchy_level', 50)->nullable()->comment('user context layer - like - primary, secondary, sub-seconday');
-            $table->tinyInteger('business_type')->default(1)->comment('1=personal, 2=company');
+            $table->tinyInteger('hierarchy_level')->nullable()->comment('user context layer id - like - primary = 1, secondary = 2, sub-seconday = 3');
+            $table->tinyInteger('business_type')->default(1)->comment('1=company, 2=individual(personal)');
 
             $table->foreignId('parent_business_id')
                 ->nullable()
@@ -22,7 +22,7 @@ return new class extends Migration {
             $table->foreignId('user_id')
                 ->constrained('users')
                 ->onDelete('restrict')
-                ->comment('Business owner → users.id - like user_id');
+                ->comment('Business owner → users.id - user_id');
 
             $table->string('name', 150)->nullable()->unique()->comment('Name of organization');
             $table->string('slug', 180)->nullable()->unique()->comment('SEO friendly unique key');
