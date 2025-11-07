@@ -23,7 +23,47 @@ Route::middleware('auth')->prefix('profile')->name('profile.')->group(function (
     Route::delete('/', [ProfileController::class, 'destroy'])->name('destroy');
 });
 
-Route::middleware(['auth', 'permission:users.manage'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+
+    Route::resource('roles', RoleController::class)
+        ->middleware('permission:roles.manage');
+
+    Route::get('users', [UserController::class, 'index'])
+        ->name('users.index')
+        ->middleware('permission:users.view');
+
+    Route::get('users/create', [UserController::class, 'create'])
+        ->name('users.create')
+        ->middleware('permission:users.create');
+
+    Route::get('users/show', [UserController::class, 'create'])
+        ->name('users.show')
+        ->middleware('permission:users.show');
+
+    Route::post('users', [UserController::class, 'store'])
+        ->name('users.store')
+        ->middleware('permission:users.create');
+
+    Route::get('users/{user}/edit', [UserController::class, 'edit'])
+        ->name('users.edit')
+        ->middleware('permission:users.edit');
+
+    Route::put('users/{user}', [UserController::class, 'update'])
+        ->name('users.update')
+        ->middleware('permission:users.edit');
+
+    Route::delete('users/{user}', [UserController::class, 'destroy'])
+        ->name('users.destroy')
+        ->middleware('permission:users.delete');
+
+    Route::get('users/{user}/roles/assign', [UserController::class, 'assignRoleForm'])
+        ->name('users.assignRoleForm')
+        ->middleware('permission:users.assign');
+    Route::post('users/{user}/roles/assign', [UserController::class, 'assignRoles'])
+        ->name('users.assignRoles');
+});
+
+/* Route::middleware(['auth', 'permission:users.manage'])->prefix('admin')->name('admin.')->group(function () {
 
     Route::resource('roles', RoleController::class);
     
@@ -37,7 +77,7 @@ Route::middleware(['auth', 'permission:users.manage'])->prefix('admin')->name('a
     Route::post('users/{user}/roles/assign', [UserController::class, 'assignRoles'])
         ->name('users.assignRoles')
         ->middleware('permission:users.assign');
-});
+}); */
 
 require __DIR__.'/auth.php';
 

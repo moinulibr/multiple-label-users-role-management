@@ -34,7 +34,10 @@ trait HasRolesAndPermissions
                 $rolePermissions = json_decode($role->permissions, true) ?? [];
                 $permissions = array_merge($permissions, $rolePermissions);
             }
-            //Log::info("permissions trait - ".json_encode($permissions));
+            Log::info("permissions trait - ".json_encode($permissions));
+            $contextManager = app(UserContextManager::class);
+            $userContext = $contextManager->getUserContextLayer();
+            Log::info("userContext layer - ".json_encode($userContext));
             return array_unique($permissions);
         });
     }

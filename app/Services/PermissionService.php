@@ -28,7 +28,7 @@ class PermissionService
 
                 // 🔹 Context-based permissions
                 foreach ($rules['contexts'] ?? [] as $context) {
-                    $key = "{$module}.{$action}.{$context}";
+                    $key = "{$module}.{$action}";
                     Gate::define($key, fn($user) => $user->hasPermission($key));
                 }
             }
@@ -38,6 +38,41 @@ class PermissionService
     /**
      * ✅ Smart permission check (with or without context)
      */
+    public static function check(string $permission): bool
+    {
+        $contextManager = app(UserContextManager::class);
+        $user = Auth::user();
+        if (!$user) return false;
+
+        // Developer / Super Admin always pass
+        if ($user->is_developer || $contextManager->isSuperAdmin()) {
+            return true;
+        }
+
+        [$module, $action] = explode('.', $permission);
+        $rules = config("app_permissions.modules.{$module}.actions.{$action}", []);
+
+        // 1️⃣ Global allow
+        if (!empty($rules['all_contexts']) && $rules['all_contexts'] === true) {
+            return $user->hasPermission("{$module}.{$action}");
+        }
+
+        // 2️⃣ Context-based
+        $userContext = $contextManager->getUserContextLayer(); // e.g. 'secondary'
+        $allowedContexts = $rules['contexts'] ?? [];
+
+        if (in_array($userContext, $allowedContexts)) {
+            // context allowed হলে শুধু main permission ("users.create") check করো
+            return $user->hasPermission("{$module}.{$action}");
+        }
+
+        // 3️⃣ Not allowed for this context
+        return false;
+    }
+}
+
+
+/*
     public static function check(string $permission): bool
     {
         $contextManager = app(UserContextManager::class);
@@ -76,4 +111,4 @@ class PermissionService
         // 🔸 module.action.context
         return $user->hasPermission($permission);
     }
-}
+*/

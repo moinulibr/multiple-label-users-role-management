@@ -14,7 +14,7 @@ return [
         /* $userLevelId = 3;
         $contextValue = config("app_permissions.user_contexts_layer.{$userLevelId}");
         Log::info("permissions config value- " . $contextValue); */
-        
+
     /*
     |--------------------------------------------------------------------------
     | Modules & Actions with Context Rules
@@ -29,10 +29,10 @@ return [
         'users' => [
             'actions' => [
                 'manage' => ['all_contexts' => true],
-                'assign' => ['all_contexts' => false, 'contexts' => ['primary']],
                 'create' => ['all_contexts' => false, 'contexts' => ['primary', 'secondary']],
                 'edit'   => ['all_contexts' => false, 'contexts' => ['primary', 'secondary', 'sub-secondary']],
                 'view'   => ['all_contexts' => true],
+                'assign' => ['all_contexts' => false, 'contexts' => ['primary']],
             ],
         ],
 
