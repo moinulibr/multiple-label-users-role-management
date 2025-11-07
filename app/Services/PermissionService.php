@@ -21,13 +21,13 @@ class PermissionService
             foreach ($data['actions'] as $action => $rules) {
 
                 // 🔹 Global permission (no context)
-                if (!empty($rules['all_contexts'])) {
+                if (!empty($rules['isAllowedToAllContextLayer'])) {
                     $key = "{$module}.{$action}";
                     Gate::define($key, fn($user) => $user->hasPermission($key));
                 }
 
                 // 🔹 Context-based permissions
-                foreach ($rules['contexts'] ?? [] as $context) {
+                foreach ($rules['contextLayer'] ?? [] as $context) {
                     $key = "{$module}.{$action}";
                     Gate::define($key, fn($user) => $user->hasPermission($key));
                 }
@@ -53,13 +53,13 @@ class PermissionService
         $rules = config("app_permissions.modules.{$module}.actions.{$action}", []);
 
         // 1️⃣ Global allow
-        if (!empty($rules['all_contexts']) && $rules['all_contexts'] === true) {
+        if (!empty($rules['isAllowedToAllContextLayer']) && $rules['isAllowedToAllContextLayer'] === true) {
             return $user->hasPermission("{$module}.{$action}");
         }
 
         // 2️⃣ Context-based
         $userContext = $contextManager->getUserContextLayer(); // e.g. 'secondary'
-        $allowedContexts = $rules['contexts'] ?? [];
+        $allowedContexts = $rules['contextLayer'] ?? [];
 
         if (in_array($userContext, $allowedContexts)) {
             // context allowed হলে শুধু main permission ("users.create") check করো
@@ -70,45 +70,3 @@ class PermissionService
         return false;
     }
 }
-
-
-/*
-    public static function check(string $permission): bool
-    {
-        $contextManager = app(UserContextManager::class);
-        $isSuperAdminFlag = $contextManager->isSuperAdmin();
-       
-        $user = Auth::user();
-        if (!$user) return false;
-
-        // 🔹 Developer or Super Admin bypass
-        if ($user->is_developer || $isSuperAdminFlag) {
-            return true;
-        }
-
-        $parts = explode('.', $permission);
-
-        // module.action (no context)
-        if (count($parts) === 2) {
-            [$module, $action] = $parts;
-            $rules = config("app_permissions.modules.{$module}.actions.{$action}", []);
-
-            // global
-            if (!empty($rules['all_contexts'])) {
-                return $user->hasPermission("{$module}.{$action}");
-            }
-
-            // context based
-            foreach ($rules['contexts'] ?? [] as $context) {
-                if ($user->hasPermission("{$module}.{$action}.{$context}")) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-        
-        // 🔸 module.action.context
-        return $user->hasPermission($permission);
-    }
-*/
