@@ -12,6 +12,7 @@ class Business extends Model
     protected $fillable = [
         'is_prime',
         'business_type',
+        'hierarchy_level_id',
         'parent_business_id',
         'user_id',
         'default_login',

@@ -43,7 +43,7 @@ trait HasRolesAndPermissions
     {
         $contextManager = app(UserContextManager::class);
         $isSuperAdminFlag = $contextManager->isSuperAdmin();
-        
+
         if ($this->is_developer) return true;
         if ($isSuperAdminFlag) return true;
         
@@ -51,3 +51,16 @@ trait HasRolesAndPermissions
         return in_array($permission, $allPermissions);
     }
 }
+
+
+/*
+$permissionsConfig = config('app_permissions.user_contexts_layer', []);
+Log::info("permissions config - " . json_encode($permissionsConfig));
+$contextManager = app(UserContextManager::class);
+$getUserContextLayer = $contextManager->getUserContextLayer();
+$getUserContextLayerId = $contextManager->getUserContextLayerId();
+Log::info("permissions config layer- " . $getUserContextLayer);
+
+$contextValue = config("app_permissions.user_contexts_layer.{$getUserContextLayerId}");
+Log::info("permissions config value- " . $contextValue);
+*/

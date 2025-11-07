@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Session;
 use App\Models\UserProfile;
+use Illuminate\Support\Facades\Log;
 
 class UserContextManager
 {
@@ -16,6 +17,7 @@ class UserContextManager
     const SESSION_USER_IS_DEVELOPER = 'user_is_developer';
     const SESSION_USER_IS_SUPER_ADMIN = 'user_is_super_admin';
     const SESSION_USER_CONTEXT_LAYER = 'user_contexts_layer';
+    const SESSION_USER_CONTEXT_LAYER_ID = 'user_contexts_layer_id';
     const SESSION_IS_TENANT_USER = 'is_tenant_user';
     const SESSION_TIMEZONE = 'timezone';
     const SESSION_LANGUAGE = 'language';
@@ -33,6 +35,12 @@ class UserContextManager
         Session::put(self::SESSION_USER_TYPE_ID, $profile->user_type_id);
         Session::put(self::SESSION_USER_TYPE, $profile->userType->name ?? null);
         Session::put(self::SESSION_BUSINESS_ID, $businessId);
+        $contextLayerId = $profile->business->hierarchy_level_id ?? 0;
+        //Log::info("context layer id - " . $contextLayerId);
+        $contextValue = config("app_permissions.user_contexts_layer.{$contextLayerId}");
+        //Log::info("context layer value - " . $contextValue);
+        Session::put(self::SESSION_USER_CONTEXT_LAYER, $contextValue ?? null);
+        Session::put(self::SESSION_USER_CONTEXT_LAYER_ID, $contextLayerId);
         Session::put(self::SESSION_IS_TENANT_USER, !is_null($businessId));
         Session::put(self::SESSION_USER_IS_DEVELOPER, $user->is_developer);
         $isSuperAdmin = $profile->userType->name == 'super_admin' ? true : false;
@@ -60,6 +68,7 @@ class UserContextManager
             self::SESSION_LANGUAGE,
             self::SESSION_SESSION_TOKEN,
             self::SESSION_USER_CONTEXT_LAYER,
+            self::SESSION_USER_CONTEXT_LAYER_ID,
         ]);
     }
 
@@ -95,6 +104,10 @@ class UserContextManager
     public function getUserContextLayer()
     {
         return Session::get(self::SESSION_USER_CONTEXT_LAYER);
+    }
+    public function getUserContextLayerId():?int
+    {
+        return Session::get(self::SESSION_USER_CONTEXT_LAYER_ID);
     }
     public function isTenantUser(): bool
     {
