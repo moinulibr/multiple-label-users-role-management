@@ -6,6 +6,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\UserController;
+use App\Services\UserContextManager;
 use Illuminate\Support\Facades\Route;
 
 
@@ -104,3 +105,15 @@ Route::get('/testrepso', [TestController::class, 'index']);
 Route::get('/test', function () {
     return auth()->user()->hasPermission('users.manage') ? 'OK' : 'NO';
 })->middleware('auth');
+
+Route::get('/cache', function () {
+    $contextManager = app(UserContextManager::class);
+    $userContext = $contextManager->getUserContextLayer(); // e.g. 'secondary'
+    $businessId = $contextManager->getBusinessId(); // nullable
+    $userProfileId = $contextManager->getUserProfileId(); // nullable
+    $user = auth()->user();
+    $user->clearPermissionCache($businessId);
+
+    \App\View\Composers\SidebarComposer::clearMenuCacheForUser($user->id, $userContext, $businessId, $userProfileId);
+    return  redirect('/dashboard');
+}) ;
