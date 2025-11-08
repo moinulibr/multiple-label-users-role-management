@@ -4,14 +4,11 @@ namespace App\View\Composers;
 
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Auth;
+use App\Services\UserContextManager;
+use App\Services\PermissionService;
 
 class SidebarComposer
 {
-    /**
-     * Load menu data and filter based on user's permissions.
-     * @param  \Illuminate\View\View  $view
-     * @return void
-     */
     public function compose(View $view)
     {
         $user = Auth::user();
@@ -20,38 +17,60 @@ class SidebarComposer
             return;
         }
 
-        $menuConfig = config('sidebar'); // your existing config
-        $businessId = session('current_business_id');
+        $contextManager = app(UserContextManager::class);
+        $userContext = $contextManager->getUserContextLayer(); // e.g. 'secondary'
+        $menuConfig = config('sidebar');
 
-        $filtered = [];
+        $filteredMenu = [];
+
         foreach ($menuConfig as $item) {
-            $mainPermission = $item['permission'] ?? null;
-            $showMain = true;
-
-            if ($mainPermission && !$user->hasPermission($mainPermission, $businessId)) {
-                $showMain = false;
+            if (!$this->isAllowedForContext($item, $userContext)) {
+                continue;
             }
 
+            $mainPerm = $item['permission'] ?? null;
+            $showMain = $mainPerm ? PermissionService::check($mainPerm) : true;
+
+            // Submenu filter
             if (isset($item['submenu'])) {
-                $subs = [];
+                $subItems = [];
                 foreach ($item['submenu'] as $sub) {
+                    if (!$this->isAllowedForContext($sub, $userContext)) {
+                        continue;
+                    }
+
                     $subPerm = $sub['permission'] ?? null;
-                    if (!$subPerm || $user->hasPermission($subPerm, $businessId)) {
-                        $subs[] = $sub;
+                    if (!$subPerm || PermissionService::check($subPerm)) {
+                        $subItems[] = $sub;
                     }
                 }
-                $item['submenu'] = $subs;
-                if (!empty($item['submenu'])) {
-                    $filtered[] = $item;
-                    continue;
-                }
-            }
 
-            if ($showMain && !isset($item['submenu'])) {
-                $filtered[] = $item;
+                if (!empty($subItems)) {
+                    $item['submenu'] = $subItems;
+                    $filteredMenu[] = $item;
+                } elseif ($showMain) {
+                    $filteredMenu[] = $item;
+                }
+            } else {
+                if ($showMain) {
+                    $filteredMenu[] = $item;
+                }
             }
         }
 
-        $view->with('menuItems', $filtered);
+        $view->with('menuItems', $filteredMenu);
+    }
+
+    /**
+     * 🔹 Check if menu is allowed for current user context
+     */
+    private function isAllowedForContext(array $item, string $userContext): bool
+    {
+        if (!empty($item['isAllowedToAllContextLayer'])) {
+            return true;
+        }
+
+        $allowed = $item['contextLayer'] ?? [];
+        return in_array($userContext, $allowed);
     }
 }
