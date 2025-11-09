@@ -28,13 +28,6 @@ return [
                 'isAllowedToAllContextLayer' => false,
                 'contextLayer' => ['primary', 'secondary'],
             ],
-            [
-                'title' => 'Assign Role',
-                'route' => 'admin.users.assignRoleForm',
-                'permission' => 'users.assign',
-                'isAllowedToAllContextLayer' => false,
-                'contextLayer' => ['primary'],
-            ],
         ],
     ],
     [
