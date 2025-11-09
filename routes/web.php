@@ -4,7 +4,9 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SwitchAccountController;
 use App\Http\Controllers\TestController;
+use App\Http\Controllers\UserContextController;
 use App\Http\Controllers\UserController;
 use App\Services\UserContextManager;
 use Illuminate\Support\Facades\Route;
@@ -97,6 +99,10 @@ Route::middleware(['auth', 'permission:settings.manage'])->prefix('admin')->name
 
 
 
+Route::middleware('auth')->group(function () {
+    Route::post('/switch-profile', [UserContextController::class, 'switchProfile'])->name('profile.switch');
+});
+
 
 //test repository
 Route::get('/testrepso', [TestController::class, 'index']);
@@ -105,6 +111,8 @@ Route::get('/testrepso', [TestController::class, 'index']);
 Route::get('/test', function () {
     return auth()->user()->hasPermission('users.manage') ? 'OK' : 'NO';
 })->middleware('auth');
+
+
 
 Route::get('/cache', function () {
     $contextManager = app(UserContextManager::class);

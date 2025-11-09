@@ -155,8 +155,9 @@
                 </a>
             </li>
             <li><a class="dropdown-link-item" href="#"><i class="mdi mdi-email-outline"></i><span class="nav-text">Message</span><span class="badge badge-pill badge-primary">24</span></a></li>
-            <li><a class="dropdown-link-item" href="#"><i class="mdi mdi-diamond-stone"></i><span class="nav-text">Activities</span></a></li>
             <li><a class="dropdown-link-item" href="#"><i class="mdi mdi-settings"></i><span class="nav-text">Account Setting</span></a></li>
+
+            @include('layouts.switch-account-dropdown')
 
             <li class="dropdown-footer" style="text-align: left">
                 <!-- Logout Implementation for Laravel -->
@@ -171,5 +172,5 @@
         </ul>
     </li>
     @endauth
-</ul>
 
+</ul>

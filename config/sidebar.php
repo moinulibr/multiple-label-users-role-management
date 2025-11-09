@@ -4,7 +4,7 @@ return [
     [
         'title' => 'Dashboard',
         'icon' => 'mdi mdi-view-dashboard',
-        'route' => 'admin.dashboard',
+        'route' => 'dashboard',
         'permission' => 'dashboard.view',
         'isAllowedToAllContextLayer' => true,
     ],

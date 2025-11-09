@@ -296,6 +296,7 @@ class DynamicLoginController extends Controller
     public function resendOtp(Request $request){
         $request->validate([
             'login_key' => 'required|string', // The phone number used
+            'profile' => 'required',
             'login_key_type' => ['required', 'string', 'in:phone'],
             'business_id' => 'nullable',
             'role' => 'nullable|string',
@@ -313,6 +314,8 @@ class DynamicLoginController extends Controller
         // Use the same logic as the initial OTP generation
         $profileData = [
             'business_id' => $request->business_id,
+            'profile' => $request->profile,
+            'profile' => $request->profile,
             'role' => $request->role,
         ];
 

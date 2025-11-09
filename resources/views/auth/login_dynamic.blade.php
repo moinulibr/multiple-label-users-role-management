@@ -12,7 +12,7 @@
         :root {
             /* Primary Colors - Lavender/Purple */
             --cual-primary-light: #9d78e7; 
-            --cual-primary-dark: #6366f1;  
+            --cual-primary-dark: #6366f1;  
             --cual-link-color: #9d78e7; 
             
             /* Button Colors (Lavender shade) */
@@ -115,13 +115,16 @@
             gap: 1.5rem; /* space-y-6 */
         }
 
+        /* Form Container Minimum Height Fix */
         .cual-form-container {
             display: none;
             opacity: 0;
             transition: opacity 0.4s ease-in-out;
-            min-height: 100px; 
+            /* 🟢 Added min-height to prevent jumping/shrinking between steps */
+            min-height: 150px; 
             position: relative; 
         }
+        /*  Form Container Minimum Height Fix */
 
         .cual-form-container.active {
             display: flex;
@@ -146,28 +149,67 @@
             margin-bottom: 0; 
         }
         
-        /* *** আপনার অনুরোধ অনুযায়ী সংশোধিত CSS *** */
+        /* Input Field (Design Fix for full width/consistency) */
         .cual-input-field {
             display: block;
-            width: calc(100% - 20px); 
-            padding: 0.5rem 0rem; 
+            /* MODIFICATION START: Input Field Width/Padding Consistency Fix */
+            /* width: calc(100% - 20px); -- Removed for standard box-sizing behavior */
+            width: 100%; 
+            padding: 0.5rem 0.75rem; /* Changed vertical padding from 0rem to 0.5rem and horizontal from 10px to 0.75rem for better aesthetics */
+            box-sizing: border-box; /* Ensures padding is included in the width */
+            /* MODIFICATION END: Input Field Width/Padding Consistency Fix */
             border: 1px solid var(--cual-gray-300); 
             border-radius: 0.375rem; 
             box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); 
             color: var(--cual-900);
             background-color: var(--cual-gray-100); 
             font-size: 0.875rem; 
-            padding-left: 10px; 
-            padding-right: 10px; 
+            height: 40px;
         }
-        /* *************************************** */
         
+        /* --- Loader/Spinner CSS --- */
+        .cual-spinner {
+            display: inline-block;
+            width: 1.15em;
+            height: 1.15em;
+            /* Basic border color (light grey) */
+            border: 0.15em solid rgba(255, 255, 255, 0.3); 
+            border-radius: 50%;
+            animation: cual-spin 1s linear infinite;
+            vertical-align: middle;
+            margin-bottom: -0.1em;
+            margin-left: 0.5rem; /* Added margin for spacing with text */
+        }
+
+        /* The moving part of the spinner (darker color, matching button text) */
+        .cual-spinner-white-border {
+            border-top-color: #ffffff; 
+        }
+
+        @keyframes cual-spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+      
         .cual-input-field:focus {
             outline: none;
             border-color: var(--cual-button-focus);
             box-shadow: 0 0 0 1px var(--cual-button-focus);
             background-color: #fff; 
         }
+
+        .cual-btn-primary:disabled {
+            background-color: #799dbe; 
+            cursor: not-allowed; 
+            opacity: 0.7; /* Use 0.7 for consistency */
+            box-shadow: none;
+        }
+
+        .cual-btn-primary.is-loading {
+            cursor: wait !important;
+        }
+        
 
         .cual-input-group-step-2 {
             margin-bottom: 0.75rem; 
@@ -217,9 +259,9 @@
             line-height: 1;
         }
 
-        /* ছোট লিংকের জন্য ফন্ট সাইজ (Change/Retype & Resend OTP) */
+        /* (Change/Retype & Resend OTP) */
         .cual-link-text-sm {
-            font-size: 0.85rem; /* সামান্য বড় করা হলো */
+            font-size: 0.85rem; 
             line-height: 1;
         }
 
@@ -339,7 +381,6 @@
             </p>
         </div>
 
-        <!-- মেসেজ বক্স -->
         <div id="cual-message-box" class="cual-message-box cual-hidden" role="alert">
             <svg id="cual-message-icon" class="cual-message-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <!-- Icon will be set by JS -->
@@ -366,7 +407,6 @@
                 <div class="cual-input-label-row">
                     <label for="cual-login-key" class="cual-input-label">Email or Phone Number</label>
                     
-                    <!-- স্টেপ ১ এর জন্য Change/Retype? বাটন (ডিফল্টভাবে লুকানো থাকবে) -->
                     <button type="button" id="cual-change-key-button-step1" 
                             class="cual-hidden cual-link-text cual-link-text-sm" 
                             onclick="goToStep1()">
@@ -382,7 +422,7 @@
                 <button type="button" id="cual-next-button" onclick="handleIdentifyUser()"
                     class="cual-btn-primary" disabled>
                     Continue
-                    <span id="cual-next-loading-spinner" class="cual-hidden cual-ml-2 cual-spinner cual-spinner-white-border"></span>
+                    <span id="cual-next-loading-spinner" class="cual-hidden cual-spinner cual-spinner-white-border"></span>
                 </button>
             </div>
 
@@ -395,7 +435,6 @@
                         Password
                     </label>
                     
-                    <!-- স্টেপ ২ এর জন্য Change/Retype? বাটন (স্টেপ ২ এ গেলে দেখাবে) -->
                     <button type="button" id="cual-change-key-button" 
                             class="cual-hidden cual-link-text cual-link-text-sm" 
                             onclick="goToStep1()">
@@ -444,7 +483,7 @@
                 <div>
                     <button type="submit" id="cual-login-button" class="cual-btn-primary cual-btn-sign-in" disabled>
                         Sign In
-                        <span id="cual-login-loading-spinner" class="cual-hidden cual-ml-2 cual-spinner cual-spinner-white-border"></span>
+                        <span id="cual-login-loading-spinner" class="cual-hidden cual-spinner cual-spinner-white-border"></span>
                     </button>
                 </div>
             </div>
@@ -511,8 +550,49 @@
             warning: '<path d="M1 21H23L12 2L1 21ZM13 18H11V16H13V18ZM13 14H11V10H13V14Z"/>'
         };
 
-        // --- Utility Functions ---
+        
+        /**
+         * @param {string} buttonId - 
+         * @param {string} spinnerId - 
+         */
+        function showLoader(buttonId, spinnerId) {
+            const button = document.getElementById(buttonId);
+            const spinner = document.getElementById(spinnerId);
+            
+            if (button) {
+                button.disabled = true;
+                button.classList.add('is-loading'); 
+            }
+            if (spinner) {
+                spinner.classList.remove('cual-hidden'); 
+            }
+        }
 
+        /**
+         * @param {string} buttonId -  id।
+         * @param {string} spinnerId -  id।
+         * @param {string} originalText - 
+         */
+        function hideLoader(buttonId, spinnerId, originalText) {
+            const button = document.getElementById(buttonId);
+            const spinner = document.getElementById(spinnerId);
+            
+            if (button) {
+                button.disabled = false;
+                button.classList.remove('is-loading');
+            }
+            if (spinner) {
+                spinner.classList.add('cual-hidden');
+            }
+      
+            if (buttonId === 'cual-next-button') {
+                checkLoginKey();
+            } else if (buttonId === 'cual-login-button') {
+                checkCredentialInput();
+            }
+        }
+
+        // --- Utility Functions ---
         function showMessage(message, type = 'success') {
             messageText.textContent = message;
             messageIcon.innerHTML = icons[type] || icons.success;
@@ -609,7 +689,7 @@
             // Set UI fields
             credentialInput.autofocus = true
             credentialInput.type = isOTP ? 'text' : 'password';
-            credentialInput.placeholder = isOTP ? 'Enter 4 or 6-digit OTP' : 'Enter your password';
+            credentialInput.placeholder = isOTP ? 'Enter 4-digit OTP' : 'Enter your password';
             credentialLabel.textContent = isOTP ? 'OTP Code' : 'Password';
             loginKeyDisplay.textContent = `Using: ${data.login_key_value}`; 
             credentialInput.value = '';
@@ -630,6 +710,7 @@
             checkCredentialInput();
             setStep(2);
             showMessage(data.message, 'success');
+            credentialInput.focus();
         }
 
         function startResendTimer(duration) {
@@ -659,8 +740,14 @@
         // --- API Calls (unchanged logic) ---
 
         async function handleIdentifyUser() {
+            const loginKey = document.getElementById('cual-login-key').value.trim();
+            if (!loginKey) return;
+
             clearMessage();
-            setLoading('cual-next-button', true);
+            //setLoading('cual-next-button', true);
+            // 1. Loader Show
+            showLoader('cual-next-button', 'cual-next-loading-spinner');
+   
 
             const key = loginKeyInput.value.trim();
             lastEnteredLoginKey = key;
@@ -692,13 +779,16 @@
                 } else {
                     const messageType = (response.status === 404 || response.status === 401) ? 'error' : 'warning';
                     showMessage(data.message || 'Identification failed. Please check your key.', messageType);
+                    loginKeyInput.focus();
                 }
 
             } catch (error) {
                 showMessage('Network error or unexpected response from server. Check your backend console.', 'error');
                 console.error('Error during identifyUser:', error);
+                loginKeyInput.focus();
             } finally {
                 setLoading('cual-next-button', false);
+                hideLoader('cual-next-button', 'cual-next-loading-spinner', 'Continue');
             }
         }
         
@@ -754,7 +844,8 @@
         async function handleFinalizeLogin() {
             clearMessage();
             setLoading('cual-login-button', true);
-
+            showLoader('cual-login-button', 'cual-login-loading-spinner');
+    
             const payload = {
                 login_key: loginKeyValueInput.value,
                 credential: credentialInput.value.trim(),
@@ -783,10 +874,6 @@
 
                 if (response.ok) {
                     showMessage(data.message, 'success');
-                    
-                    loginButton.disabled = true; 
-                    setLoading('cual-login-button', true);
-                    clearInterval(resendTimer);
 
                     setTimeout(() => {
                         window.location.href = data.redirect_url;
@@ -795,14 +882,17 @@
                     showMessage(data.message || 'Login failed. Invalid credential.', 'error');
                     credentialInput.value = ''; 
                     checkCredentialInput(); 
-                    setLoading('cual-login-button', false); 
+                    credentialInput.focus();
                 }
 
             } catch (error) {
                 showMessage('Network error or unexpected response during final login.', 'error');
                 console.error('Error during finalizeLogin:', error);
-                setLoading('cual-login-button', false);
+                credentialInput.focus();
             } 
+             finally {
+                hideLoader('cual-login-button', 'cual-login-loading-spinner', 'Sign In');
+            }
         }
 
         // Initialize state on page load
@@ -811,6 +901,7 @@
             loginKeyInput.value = '';
             checkLoginKey();
         });
+
     </script>
 </body>
 
