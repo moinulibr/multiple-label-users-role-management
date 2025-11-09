@@ -46,7 +46,7 @@
                 <span class="text-uppercase flex-grow-1">
                     SWITCH TO ({{ $totalSwitchable }} MORE)
                 </span>
-                <i class="mdi mdi-chevron-down" style="font-size: 1rem;"></i>
+                <i class="mdi mdi-chevron-up collapse-icon" style="font-size: 1rem;"></i>
             </a>
 
             <div class="collapse show" id="profileSwitcherList" onclick="event.stopPropagation()">
@@ -85,16 +85,30 @@
 
 <script>
     window.toggleBootstrapCollapse = function(event) {
-        var targetId = event.currentTarget.getAttribute('href');
-        var targetElement = document.querySelector(targetId);
+    event.stopPropagation();
+    var toggleButton = event.currentTarget;
+    var targetId = toggleButton.getAttribute('href');
+    var targetElement = document.querySelector(targetId);
+    var iconElement = toggleButton.querySelector('.collapse-icon');
 
         if (targetElement) {
             if (targetElement.classList.contains('show')) {
+
                 targetElement.classList.remove('show');
-                event.currentTarget.setAttribute('aria-expanded', 'false');
+                toggleButton.setAttribute('aria-expanded', 'false');
+                
+                if (iconElement) {
+                    iconElement.classList.remove('mdi-chevron-up');
+                    iconElement.classList.add('mdi-chevron-down');
+                }
             } else {
                 targetElement.classList.add('show');
-                event.currentTarget.setAttribute('aria-expanded', 'true');
+                toggleButton.setAttribute('aria-expanded', 'true');
+                
+                if (iconElement) {
+                    iconElement.classList.remove('mdi-chevron-down');
+                    iconElement.classList.add('mdi-chevron-up');
+                }
             }
         }
     };
