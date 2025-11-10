@@ -116,4 +116,4 @@ Route::get('/cache', function () {
     $contextManager = app(UserContextManager::class);
     $contextManager->clearAllCachesByProfile($contextManager->getUserProfileId(), $module = 'all');
     return  redirect('/dashboard');
-}) ;
+})->middleware('auth');

@@ -20,20 +20,14 @@ class SidebarComposer
         }
 
         $contextManager = app(UserContextManager::class);
-        $userContext = $contextManager->getUserContextLayer() ?? 'default'; // e.g. 'secondary'
-        Log::info("sidebar  composer - user context - " . $userContext);
-        $businessId = $contextManager->getBusinessId(); // nullable
-        $contextIdentifier = $businessId ? "business:{$businessId}" : "profile:{$contextManager->getUserProfileId()}";
-        Log::info("sidebar  composer - user contextIdentifier - " . $contextIdentifier);
+        $userContext = $contextManager->getUserContextLayer() ?? 'nullableBusinessOfUserProifle'; // e.g. 'secondary'
+        //$businessId = $contextManager->getBusinessId(); // nullable
         // cache key: per user + per context layer + per business/profile
-        //$cacheKey = "sidebar_menu:{$user->id}:{$userContext}:{$contextIdentifier}";
         $cacheKey = $contextManager->getSidebarMenuCacheKey();
-        Log::info("sidebar  composer - sidebar_menu - " . $cacheKey);
         // Build (and cache) filtered menu
-        $menu = Cache::remember($cacheKey, now()->addMinutes(1), function () use ($user, $userContext, $businessId) {
+        $menu = Cache::remember($cacheKey, now()->addMinutes(1), function () use ($user, $userContext) {
             $menuConfig = config('sidebar', []);
             $filtered = [];
-            Log::info('in cache menu');
             foreach ($menuConfig as $item) {
                 if (!$this->isAllowedForContext($item, $userContext)) {
                     continue;

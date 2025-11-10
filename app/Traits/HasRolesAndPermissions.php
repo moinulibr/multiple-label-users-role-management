@@ -47,7 +47,6 @@ trait HasRolesAndPermissions
             $roles = $this->roles()
                 ->select('roles.id', 'roles.permissions', 'role_user.business_id')
                 ->get();
-            Log::info("roles from trait in cache - ".json_encode($roles));
 
             foreach ($roles as $role) {
                 // If role is business-scoped and businessId provided, ensure match

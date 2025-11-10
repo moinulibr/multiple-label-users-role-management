@@ -274,10 +274,9 @@ class DynamicLoginController extends Controller
         // Final login result
         if ($isLoggedIn) {
             $this->userContextManager->setContext($userProfile, $user);
-            //$request->session()->regenerate();
-            // Store the selected profile context in session
-            //$request->session()->put('current_business_id', $businessId);
-            //$request->session()->put('current_role', $role);
+
+            //after update session, again showing latest value of session
+            $this->userContextManager->getAllSessionCacheAndCacheKeys();
 
             // NOTE: Replace 'dashboard' with your actual route name
             $redirectUrl = '/dashboard';

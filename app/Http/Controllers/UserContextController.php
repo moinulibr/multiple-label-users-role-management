@@ -32,6 +32,9 @@ class UserContextController extends Controller
         // set current profile
         $this->contextManager->setCurrentProfile($profileId);
 
+        //after change - just for showing latest value of session
+        $this->contextManager->getAllSessionCacheAndCacheKeys();
+        
         return redirect()->intended(route('dashboard'))->with('success', 'Profile Switched successfully।');
     }
 }
