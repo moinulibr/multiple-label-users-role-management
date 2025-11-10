@@ -114,12 +114,6 @@ Route::get('/test', function () {
 
 Route::get('/cache', function () {
     $contextManager = app(UserContextManager::class);
-    $userContext = $contextManager->getUserContextLayer(); // e.g. 'secondary'
-    $businessId = $contextManager->getBusinessId(); // nullable
-    $userProfileId = $contextManager->getUserProfileId(); // nullable
-    $user = auth()->user();
-    $user->clearPermissionCache($businessId);
-
-    \App\View\Composers\SidebarComposer::clearMenuCacheForUser($user->id, $userContext, $businessId, $userProfileId);
+    $contextManager->clearAllCachesByProfile($contextManager->getUserProfileId(), $module = 'all');
     return  redirect('/dashboard');
 }) ;

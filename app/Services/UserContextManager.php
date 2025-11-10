@@ -10,11 +10,9 @@ use Illuminate\Support\Facades\Log;
 
 class UserContextManager
 {
-    // সেশন কী (Session Keys)
+    // (Session Keys)
     const CURRENT_PROFILE_ID_KEY = 'current_user_profile_id';
     const CACHED_PROFILES_KEY = 'user_profiles_cache';
-
-
 
     // 🔹 Session keys
     const SESSION_BUSINESS_ID = 'business_id';
@@ -30,8 +28,43 @@ class UserContextManager
     const SESSION_TIMEZONE = 'timezone';
     const SESSION_LANGUAGE = 'language';
     const SESSION_SESSION_TOKEN = 'session_token';
+
+    //user_profiles table [business_id nullable]
+    const NULLABLE_BUSINESS_OF_USER_PROFILE = 'nullableBusinessOfUserProifle';//all of the users, who has no business_id in the user_profiles table [business_id nullable]
+
+
     /**
-     * লগইন করা ব্যবহারকারীর সমস্ত অ্যাক্টিভ প্রোফাইল ক্যাশে/প্রাপ্ত করে।
+     * ✅ Set full context for current user
+     */
+    public function setContext(UserProfile $profile, $user): void
+    {
+        $businessId = $profile->business_id;
+
+        Session::put(self::SESSION_USER_ID, $user->id);
+        Session::put(self::SESSION_USER_PROFILE_ID, $profile->id);
+        Session::put(self::SESSION_USER_TYPE_ID, $profile->user_type_id);
+        Session::put(self::SESSION_USER_TYPE, $profile->userType->name ?? null);
+        Session::put(self::SESSION_BUSINESS_ID, $businessId);
+        $contextLayerId = $profile->business->hierarchy_level_id ?? 0;
+        Log::info("session - context layer id - " . $contextLayerId);
+        $contextValue = config("app_permissions.user_contexts_layer.{$contextLayerId}") ?? self::NULLABLE_BUSINESS_OF_USER_PROFILE;
+        Log::info("session - context layer value - " . $contextValue);
+        Session::put(self::SESSION_USER_CONTEXT_LAYER, $contextValue ?? null);
+        Session::put(self::SESSION_USER_CONTEXT_LAYER_ID, $contextLayerId);
+        Session::put(self::SESSION_IS_TENANT_USER, !is_null($businessId));
+        Session::put(self::SESSION_USER_IS_DEVELOPER, $user->is_developer);
+        $isSuperAdmin = $profile->userType->name == 'super_admin' ? true : false;
+        Session::put(self::SESSION_USER_IS_SUPER_ADMIN, $isSuperAdmin);
+        Session::put(self::SESSION_TIMEZONE, config('app.timezone'));
+        Session::put(self::SESSION_LANGUAGE, config('app.locale'));
+        Session::put(self::SESSION_SESSION_TOKEN, session()->getId());
+
+        //$this->getAvailableProfiles();
+        $this->setCurrentProfile($profile->id);
+    }
+
+
+    /**
      *
      * @return \Illuminate\Support\Collection
      */
@@ -42,45 +75,49 @@ class UserContextManager
             return collect();
         }
 
-        $cacheKey = self::CACHED_PROFILES_KEY . ':' . $user->id;
+        $cacheKey = self::CACHED_PROFILES_KEY . ':' . $this->getUserProfileId();
 
         return Cache::remember($cacheKey, now()->addMinutes(60), function () use ($user) {
             return $user->profiles()
                 ->active()
                 ->with(['userType', 'business'])
                 ->get()
-                ->groupBy('business_id'); // Business ID দ্বারা গ্রুপ করা হলো
+                ->groupBy('business_id'); // Business ID
         });
     }
 
     /**
-     * বর্তমান ইউজার প্রোফাইল ID সেট করে।
-     *
      * @param int $profileId
      * @return void
      */
     public function setCurrentProfile(int $profileId): void
     {
-        $profiles = $this->getAvailableProfiles()->flatten(); // all profiles of user
+        Session::forget([self::SESSION_USER_PROFILE_ID]);
+        $profiles = $this->getAvailableProfiles()->flatten();
         $profile = $profiles->firstWhere('id', $profileId);
 
-        if ($profile && $profile->user_id === Auth::id()) {
-            Session::put(self::CURRENT_PROFILE_ID_KEY, $profileId);
+        /*  Log::info("session - avaliable profiles - " . json_encode($profiles) );
+            Log::info("session - avaliable profiles flatten - " . json_encode($this->getAvailableProfiles()->flatten()) );
+            Log::info("session - single profile - " . json_encode($profiles->firstWhere('id', $profileId)) );
+            Log::info("session - current profile id - " . $profileId);
+        */
+
+        if (Auth::check() && $profile && $profile->user_id == Auth::id()) {
+            Session::put(self::SESSION_USER_PROFILE_ID, $profileId);
             // clear permission cache
             $this->clearPermissionCache($profile);
         }
     }
 
     /**
-     * বর্তমানে নির্বাচিত ইউজার প্রোফাইলটি পান।
      *
      * @return \App\Models\UserProfile|null
      */
     public function getCurrentProfile(): ?UserProfile
-    {
-        $currentProfileId = Session::get(self::CURRENT_PROFILE_ID_KEY);
+    {  
+        //$currentProfileId = Session::get(self::SESSION_USER_PROFILE_ID);
+        $currentProfileId = $this->getUserProfileId();
 
-        // যদি সেশনে ID না থাকে, ডিফল্ট প্রোফাইল লোড করুন
         if (!$currentProfileId) {
             $defaultProfile = Auth::user()->profiles()->where('default_login', true)->first();
             if ($defaultProfile) {
@@ -98,58 +135,76 @@ class UserContextManager
     }
 
     /**
-     * ব্যবহারকারীর অনুমতির ক্যাশ পরিষ্কার করে।
-     *
-     * @param UserProfile $profile
-     * @return void
-     */
-    public function clearPermissionCache(UserProfile $profile): void
-    {
-        $businessId = $profile->business_id ?? 'global'; // ব্যবসার আইডি বা 'global'
-        $cacheKey = "user_permissions:{$profile->user_id}:{$businessId}";
-
-        Cache::forget($cacheKey);
-        // যদি HasRolesAndPermissions ট্রেইট-এ অন্য কোন ক্যাশ থাকে, সেটিও এখানে যোগ করুন।
-    }
-
-    /**
-     * ব্যবহারকারীর সব প্রোফাইলের ক্যাশ পরিষ্কার করে (যেমন প্রোফাইল তৈরি বা মোছার পর)।
      *
      * @return void
      */
     public function clearAvailableProfilesCache(): void
     {
         if (Auth::check()) {
-            Cache::forget(self::CACHED_PROFILES_KEY . ':' . Auth::id());
+            Cache::forget(self::CACHED_PROFILES_KEY . ':' . $this->getUserProfileId());
         }
     }
-    
 
+
+
+    public function setPermissionCache(){
+        $userProfileId = $this->getUserProfileId();
+        $businessId = $this->getBusinessId();
+        $userId = $this->getUserId();
+        $contextId = $businessId ?? $userProfileId ?? 'global';
+        return "user_permissions:{$userId}:{$contextId}";
+    }
+    public function getPermissionCacheKey(){
+        return $this->setPermissionCache();
+    }
     /**
-     * ✅ Set full context for current user
+     *
+     * @param UserProfile $profile
+     * @return void
      */
-    public function setContext(UserProfile $profile, $user): void
+    public function clearPermissionCache(UserProfile $profile): void
     {
-        $businessId = $profile->business_id;
+        $contextId = $profile->business_id ?? $profile->id ?? 'global';
+        $cacheKey = "user_permissions:{$profile->user_id}:{$contextId}";
 
-        Session::put(self::SESSION_USER_ID, $user->id);
-        Session::put(self::SESSION_USER_PROFILE_ID, $profile->id);
-        Session::put(self::SESSION_USER_TYPE_ID, $profile->user_type_id);
-        Session::put(self::SESSION_USER_TYPE, $profile->userType->name ?? null);
-        Session::put(self::SESSION_BUSINESS_ID, $businessId);
-        $contextLayerId = $profile->business->hierarchy_level_id ?? 0;
-        //Log::info("context layer id - " . $contextLayerId);
-        $contextValue = config("app_permissions.user_contexts_layer.{$contextLayerId}");
-        //Log::info("context layer value - " . $contextValue);
-        Session::put(self::SESSION_USER_CONTEXT_LAYER, $contextValue ?? null);
-        Session::put(self::SESSION_USER_CONTEXT_LAYER_ID, $contextLayerId);
-        Session::put(self::SESSION_IS_TENANT_USER, !is_null($businessId));
-        Session::put(self::SESSION_USER_IS_DEVELOPER, $user->is_developer);
-        $isSuperAdmin = $profile->userType->name == 'super_admin' ? true : false;
-        Session::put(self::SESSION_USER_IS_SUPER_ADMIN, $isSuperAdmin);
-        Session::put(self::SESSION_TIMEZONE, config('app.timezone'));
-        Session::put(self::SESSION_LANGUAGE, config('app.locale'));
-        Session::put(self::SESSION_SESSION_TOKEN, session()->getId());
+        Cache::forget($cacheKey);
+    }
+
+    public function setSidebarMenuCache()
+    {
+        $userProfileId = $this->getUserProfileId();
+        $businessId = $this->getBusinessId();
+        $userId = $this->getUserId();
+       
+        $userContext = $this->getUserContextLayer() ?? 'nullableBusinessOfUserProifle';
+        $contextIdentifier = $businessId ? "business:{$businessId}" : "profile:{$userProfileId}";
+        return "sidebar_menu:{$userId}:{$userContext}:{$contextIdentifier}";
+    }
+    public function getSidebarMenuCacheKey()
+    {
+        return $this->setSidebarMenuCache();
+    }
+    public function clearSidebarMenuCache(UserProfile $profile): void
+    {
+        $userContext = $this->getUserContextLayer() ?? 'nullableBusinessOfUserProifle';
+        $contextIdentifier = $profile->business_id ? "business:{$profile->business_id}" : "profile:{$profile->id}";
+        $cacheKey =  "sidebar_menu:{$profile->user_id}:{$userContext}:{$contextIdentifier}";
+
+        Cache::forget($cacheKey);
+    }
+
+    public function clearAllCachesByProfile($profileId, $module){
+        $profile = Auth::user()->profiles()->where('id', $profileId)->first();
+        if($profile && $module == 'sidebar'){
+            $this->clearSidebarMenuCache($profile);
+        }
+        else if($profile && $module == 'permission'){
+            $this->clearPermissionCache($profile);
+        }
+        else if($profile && $module == 'all'){
+            $this->clearSidebarMenuCache($profile);
+            $this->clearPermissionCache($profile);
+        }
     }
 
     /**

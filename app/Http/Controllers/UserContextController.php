@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Services\UserContextManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class UserContextController extends Controller
 {
@@ -27,7 +28,7 @@ class UserContextController extends Controller
         ]);
 
         $profileId = $request->input('profile_id');
-
+        Log::info('switch profile controller -'. $profileId);
         // set current profile
         $this->contextManager->setCurrentProfile($profileId);
 

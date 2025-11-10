@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Session;
 
 trait HasRolesAndPermissions
 {
+    
     /**
      * HasRolesAndPermissions
      * - Caches permissions per user per context (business_id or user_profile_id fallback)
@@ -30,10 +31,14 @@ trait HasRolesAndPermissions
      */
     public function getAllPermissions($businessId = null): array
     {
+        $contextManager = app(UserContextManager::class);
+        $userProfileId = $contextManager->getUserProfileId();
+
         // context identifier: prefer businessId, fallback to user_profile_id, else 'global'
-        $contextId = $businessId ?? $this->user_profile_id ?? 'global';
-        $cacheKey = "user_permissions:{$this->id}:{$contextId}";
+        //$contextId = $businessId ?? $userProfileId ?? 'global';
+        //$cacheKey = "user_permissions:{$this->id}:{$contextId}";
         //$cacheKey = "user_permissions:{$this->id}:{$businessId}";
+        $cacheKey = $contextManager->getPermissionCacheKey();
 
         return Cache::remember($cacheKey, now()->addMinutes(1), function () use ($businessId) {
             $permissions = [];
@@ -42,8 +47,9 @@ trait HasRolesAndPermissions
             $roles = $this->roles()
                 ->select('roles.id', 'roles.permissions', 'role_user.business_id')
                 ->get();
+            Log::info("roles from trait in cache - ".json_encode($roles));
 
-            foreach ($this->roles as $role) {
+            foreach ($roles as $role) {
                 // If role is business-scoped and businessId provided, ensure match
                 if ($businessId !== null && $role->business_id !== null && $role->business_id != $businessId) {
                     continue;
@@ -76,15 +82,6 @@ trait HasRolesAndPermissions
         return in_array($permission, $allPermissions);
     }
 
-    /**
-     * Clear this user's permission cache for a given business/context
-     */
-    public function clearPermissionCache($businessId = null): void
-    {
-        $contextId = $businessId ?? $this->user_profile_id ?? 'global';
-        $cacheKey = "user_permissions:{$this->id}:{$contextId}";
-        Cache::forget($cacheKey);
-    }
 }
 
 
