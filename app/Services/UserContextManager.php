@@ -345,11 +345,22 @@ class UserContextManager
         // This method logs all current context values for debugging.
         // It relies on Laravel's Log facade, which is correct.
         Log::info("getUserId - " . $this->getUserId());
-        Log::info("getBusinessId top - " . $this->getBusinessId());
+        Log::info("getBusinessId - " . $this->getBusinessId());
         Log::info("getUserType - " . $this->getUserType());
-        // ... (rest of the logging is kept as is)
+        Log::info("getUserTypeId - " . $this->getUserTypeId());
+        Log::info("getUserProfileId - " . $this->getUserProfileId());
+        Log::info("isDeveloper - " . $this->isDeveloper());
+        Log::info("isSuperAdmin - " . $this->isSuperAdmin());
+        Log::info("getUserContextLayer - " . $this->getUserContextLayer());
+        Log::info("getUserContextLayerId - " . $this->getUserContextLayerId());
+        Log::info("isTenantUser - " . $this->isTenantUser());
+        Log::info("getTimezone - " . $this->getTimezone());
+        Log::info("getLanguage - " . $this->getLanguage());
+        Log::info("getSessionToken - " . $this->getSessionToken());
+        Log::info("getAvailableProfiles - " . json_encode($this->getAvailableProfiles()));
+        Log::info("getCurrentProfile - " . json_encode($this->getCurrentProfile()));
+        Log::info("getPermissionCacheKey - " . json_encode($this->getPermissionCacheKey()));
         Log::info("getSidebarMenuCacheKey - " . json_encode($this->getSidebarMenuCacheKey()));
-        Log::info("getBusinessId bottom - " . $this->getBusinessId());
     }
 
     /**

@@ -39,4 +39,10 @@ class UserProfile extends Model
     {
         return $query->where('status', true);
     }
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'role_user_profiles')
+            ->withPivot('business_id')
+            ->withTimestamps();
+    }
 }

@@ -19,10 +19,6 @@ class Role extends Model
         return $this->belongsToMany(User::class, 'role_user')->withPivot('business_id')->withTimestamps();
     }
 
-    public function permissions()
-    {
-        return $this->belongsToMany(Permission::class, 'permission_role');
-    }
 
     public function hasPermissionTo(string $permissionName): bool
     {
@@ -32,5 +28,13 @@ class Role extends Model
         }
 
         return $this->permissions()->where('name', $permissionName)->exists();
+    }
+
+    // Role.php
+    public function userProfiles()
+    {
+        return $this->belongsToMany(UserProfile::class, 'role_user_profiles')
+            ->withPivot('business_id')
+            ->withTimestamps();
     }
 }
