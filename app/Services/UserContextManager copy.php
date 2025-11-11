@@ -9,9 +9,9 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 
-class UserContextManager
+class UserContextManagerCopy
 {
-    // (Cache Keys)
+    // (Session Keys)
     const CACHED_PROFILES_KEY = 'user_profiles_cache';
 
     // 🔹 Session keys
@@ -33,8 +33,7 @@ class UserContextManager
     const NULLABLE_BUSINESS_OF_USER_PROFILE = 'nullableBusinessOfUserProifle';
 
     /**
-     * Set full context for the currently authenticated user based on the selected UserProfile.
-     * This method is typically called upon successful login.
+     * ✅ Set full context for the currently authenticated user based on the selected UserProfile.
      *
      * @param UserProfile $profile The selected user profile (from user_profiles table).
      * @param \App\Models\User $user The authenticated user model instance.
@@ -44,31 +43,33 @@ class UserContextManager
     {
         $businessId = $profile->business_id ?? null;
 
-        // Base User Session Data
         Session::put(self::SESSION_USER_ID, $user->id);
         Session::put(self::SESSION_USER_PROFILE_ID, $profile->id);
         Session::put(self::SESSION_USER_TYPE_ID, $profile->user_type_id);
         Session::put(self::SESSION_USER_TYPE, $profile->userType->name ?? null);
         Session::put(self::SESSION_BUSINESS_ID, $businessId);
 
-        // Context Layer/Hierarchy Data
+        // Determine Context Layer
         $contextLayerId = $profile->business->hierarchy_level_id ?? 0;
+        //Log::info("session - context layer id - " . $contextLayerId);
+        // Context Layer/Hierarchy Data
         $contextValue = config("app_permissions.user_contexts_layer.{$contextLayerId}") ?? self::NULLABLE_BUSINESS_OF_USER_PROFILE;
-
+        //Log::info("session - context layer value - " . $contextValue);
+        // Context Layer/Hierarchy Data
         Session::put(self::SESSION_USER_CONTEXT_LAYER, $contextValue ?? null);
         Session::put(self::SESSION_USER_CONTEXT_LAYER_ID, $contextLayerId);
 
-        // Flags and System Info
         Session::put(self::SESSION_IS_TENANT_USER, !is_null($businessId));
         Session::put(self::SESSION_USER_IS_DEVELOPER, $user->is_developer);
 
         $isSuperAdmin = $profile->userType->name == 'super_admin';
         Session::put(self::SESSION_USER_IS_SUPER_ADMIN, $isSuperAdmin);
 
+        // System defaults
         Session::put(self::SESSION_TIMEZONE, config('app.timezone'));
         Session::put(self::SESSION_LANGUAGE, config('app.locale'));
         Session::put(self::SESSION_SESSION_TOKEN, session()->getId());
-
+        
         // Set current profile and clear related caches
         $this->setCurrentProfile($profile->id);
     }
@@ -87,7 +88,7 @@ class UserContextManager
             return collect();
         }
 
-        $cacheKey = self::CACHED_PROFILES_KEY . ':' . $user->id;
+        $cacheKey = self::CACHED_PROFILES_KEY . ':' . $user->id; // Cache by User ID instead of current profile ID
 
         return Cache::remember($cacheKey, now()->addMinutes(60), function () use ($user) {
             return $user->profiles()
@@ -99,91 +100,67 @@ class UserContextManager
     }
 
     /**
-     * Sets the Business ID in the session.
-     *
-     * @param int|null $businessId The ID of the business, or null if no business context.
-     * @return void
-     */
-    public function setBusinessId(?int $businessId = null): void
-    {
-        Session::put(self::SESSION_BUSINESS_ID, $businessId);
-    }
-
-    /**
-     * Sets the User Type name in the session.
-     *
-     * @param UserProfile $profile The profile from which to extract the user type name.
-     * @return void
-     */
-    public function setUserType(UserProfile $profile): void
-    {
-        Session::put(self::SESSION_USER_TYPE, $profile->userType->name ?? null);
-    }
-
-    /**
-     * Sets the User Type ID and Profile ID in the session.
-     *
-     * @param UserProfile $profile The profile from which to extract the user type ID.
-     * @return void
-     */
-    public function setUserTypeId(UserProfile $profile): void
-    {
-        Session::put(self::SESSION_USER_PROFILE_ID, $profile->id);
-        Session::put(self::SESSION_USER_TYPE_ID, $profile->user_type_id);
-    }
-
-    /**
-     * Determines and sets the User Context Layer (Name and ID) in the session.
-     *
-     * @param UserProfile $profile The profile from which to determine the context layer.
-     * @return void
-     */
-    public function setUserContextLayer(UserProfile $profile): void
-    {
-        // Determine Context Layer
-        $contextLayerId = $profile->business->hierarchy_level_id ?? 0;
-        $contextValue = config("app_permissions.user_contexts_layer.{$contextLayerId}") ?? self::NULLABLE_BUSINESS_OF_USER_PROFILE;
-
-        Session::put(self::SESSION_USER_CONTEXT_LAYER, $contextValue ?? null);
-        Session::put(self::SESSION_USER_CONTEXT_LAYER_ID, $contextLayerId);
-    }
-
-    /**
-     * Determines and sets the User Context Layer ID in the session.
-     * NOTE: This method duplicates setUserContextLayer to maintain the original file's structure.
-     *
-     * @param UserProfile $profile The profile from which to determine the context layer.
-     * @return void
-     */
-    public function setUserContextLayerId(UserProfile $profile): void
-    {
-        // Determine Context Layer
-        $contextLayerId = $profile->business->hierarchy_level_id ?? 0;
-        $contextValue = config("app_permissions.user_contexts_layer.{$contextLayerId}") ?? self::NULLABLE_BUSINESS_OF_USER_PROFILE;
-
-        Session::put(self::SESSION_USER_CONTEXT_LAYER, $contextValue ?? null);
-        Session::put(self::SESSION_USER_CONTEXT_LAYER_ID, $contextLayerId);
-    }
-
-
-    /**
      * Sets the specified UserProfile ID as the current active context in the session.
-     * Also updates related session variables (Business ID, User Type, Context Layer) 
-     * and clears the permission and sidebar caches for the new context.
+     * Clears all related caches (permission, sidebar).
      *
      * @param int $profileId The ID of the UserProfile to set as current.
      * @return void
      */
+    public function setBusinessId($businessId = null): void
+    {
+        Session::forget([self::SESSION_BUSINESS_ID]);
+        Session::put(self::SESSION_BUSINESS_ID, $businessId);
+    }
+
+    public function setUserType($profile): void
+    {
+        Session::forget([self::SESSION_USER_TYPE]);
+        Session::put(self::SESSION_USER_TYPE, $profile->userType->name ?? null);
+    }
+
+    public function setUserTypeId($profile): void
+    {
+        Session::forget([self::SESSION_USER_TYPE_ID]);
+        Session::put(self::SESSION_USER_PROFILE_ID, $profile->id);
+        Session::put(self::SESSION_USER_TYPE_ID, $profile->user_type_id);
+    }
+
+    public function setUserContextLayer($profile): void
+    {
+        // Determine Context Layer
+        $contextLayerId = $profile->business->hierarchy_level_id ?? 0;
+        //Log::info("session - context layer id - " . $contextLayerId);
+
+        $contextValue = config("app_permissions.user_contexts_layer.{$contextLayerId}") ?? self::NULLABLE_BUSINESS_OF_USER_PROFILE;
+        //Log::info("session - context layer value - " . $contextValue);
+
+        Session::put(self::SESSION_USER_CONTEXT_LAYER, $contextValue ?? null);
+        Session::put(self::SESSION_USER_CONTEXT_LAYER_ID, $contextLayerId);
+    }
+
+    public function setUserContextLayerId($profile): void
+    {
+        // Determine Context Layer
+        $contextLayerId = $profile->business->hierarchy_level_id ?? 0;
+        //Log::info("session - context layer id - " . $contextLayerId);
+
+        $contextValue = config("app_permissions.user_contexts_layer.{$contextLayerId}") ?? self::NULLABLE_BUSINESS_OF_USER_PROFILE;
+        //Log::info("session - context layer value - " . $contextValue);
+
+        Session::put(self::SESSION_USER_CONTEXT_LAYER, $contextValue ?? null);
+        Session::put(self::SESSION_USER_CONTEXT_LAYER_ID, $contextLayerId);
+    }
+
+
     public function setCurrentProfile(int $profileId): void
     {
+        // First, check if the requested profile is valid and belongs to the current user
         $profiles = $this->getAvailableProfiles()->flatten();
-        /** @var UserProfile|null $profile */
         $profile = $profiles->firstWhere('id', $profileId);
 
         if (Auth::check() && $profile && $profile->user_id == Auth::id()) {
             Session::put(self::SESSION_USER_PROFILE_ID, $profileId);
 
-            // Update all related session variables based on the new profile
             $this->setBusinessId($profile->business_id ?? null);
             $this->setUserType($profile);
             $this->setUserTypeId($profile);
@@ -206,11 +183,10 @@ class UserContextManager
     {
         $currentProfileId = $this->getUserProfileId();
 
-        // 1. If no profile is set, try to set the default_login profile
+        // 1. If no profile is set in session, try to set the default_login profile
         if (!$currentProfileId && Auth::check()) {
             $defaultProfile = Auth::user()->profiles()->where('default_login', true)->first();
             if ($defaultProfile) {
-                // Sets the default profile and updates $currentProfileId
                 $this->setCurrentProfile($defaultProfile->id);
                 $currentProfileId = $defaultProfile->id;
             }
@@ -219,7 +195,6 @@ class UserContextManager
         // 2. Fetch the current profile from the cached available profiles
         if ($currentProfileId) {
             $profiles = $this->getAvailableProfiles()->flatten();
-            /** @var UserProfile|null */
             return $profiles->firstWhere('id', $currentProfileId);
         }
 
@@ -234,7 +209,7 @@ class UserContextManager
     public function clearAvailableProfilesCache(): void
     {
         if (Auth::check()) {
-            // Use Auth::id() for the cache key
+            // Use Auth::id() for the cache key, as getAvailableProfiles uses it
             Cache::forget(self::CACHED_PROFILES_KEY . ':' . Auth::id());
         }
     }
@@ -242,7 +217,7 @@ class UserContextManager
     /**
      * Generates the cache key for user permissions based on user and current context (business/profile).
      *
-     * @return string The unique cache key for user permissions.
+     * @return string
      */
     public function getPermissionCacheKey(): string
     {
@@ -250,7 +225,7 @@ class UserContextManager
         $businessId = $this->getBusinessId();
         $userProfileId = $this->getUserProfileId();
 
-        // Context ID is Business ID if present, otherwise Profile ID, otherwise the NULLABLE constant
+        // Context ID is Business ID if present, otherwise Profile ID, otherwise 'global'
         $contextId = $businessId ?? $userProfileId ?? self::NULLABLE_BUSINESS_OF_USER_PROFILE;
 
         return "user_permissions:{$userId}:{$contextId}";
@@ -264,7 +239,6 @@ class UserContextManager
      */
     public function clearPermissionCache(UserProfile $profile): void
     {
-        // Use profile's actual data, not current session data
         $contextId = $profile->business_id ?? $profile->id ?? 'global';
         $cacheKey = "user_permissions:{$profile->user_id}:{$contextId}";
 
@@ -274,7 +248,7 @@ class UserContextManager
     /**
      * Generates the cache key for the sidebar menu based on user, context layer, and business/profile ID.
      *
-     * @return string The unique cache key for the sidebar menu.
+     * @return string
      */
     public function getSidebarMenuCacheKey(): string
     {
@@ -296,9 +270,8 @@ class UserContextManager
      */
     public function clearSidebarMenuCache(UserProfile $profile): void
     {
-        // The logic for context identification should ideally pull from the profile/business if available.
-        // For simplicity and correctness with the existing logic:
-        $userContext = $this->getUserContextLayer() ?? self::NULLABLE_BUSINESS_OF_USER_PROFILE;
+        // Must fetch the necessary values from the profile object, not the current session (which might be the old context)
+        $userContext = $profile->business->context_layer ?? $this->getUserContextLayer() ?? self::NULLABLE_BUSINESS_OF_USER_PROFILE;
         $contextIdentifier = $profile->business_id ? "business:{$profile->business_id}" : "profile:{$profile->id}";
         $cacheKey = "sidebar_menu:{$profile->user_id}:{$userContext}:{$contextIdentifier}";
 
@@ -316,7 +289,6 @@ class UserContextManager
     {
         if (!Auth::check()) return;
 
-        /** @var UserProfile|null $profile */
         $profile = Auth::user()->profiles()->where('id', $profileId)->first();
 
         if (!$profile) return;
@@ -335,30 +307,37 @@ class UserContextManager
         }
     }
 
-    /**
-     * Retrieves all current session and cache key values for logging/debugging purposes.
-     *
-     * @return void
-     */
-    public function getAllSessionCacheAndCacheKeys(): void
-    {
-        // This method logs all current context values for debugging.
-        // It relies on Laravel's Log facade, which is correct.
-        Log::info("getUserId - " . $this->getUserId());
-        Log::info("getBusinessId top - " . $this->getBusinessId());
-        Log::info("getUserType - " . $this->getUserType());
-        // ... (rest of the logging is kept as is)
-        Log::info("getSidebarMenuCacheKey - " . json_encode($this->getSidebarMenuCacheKey()));
-        Log::info("getBusinessId bottom - " . $this->getBusinessId());
+
+    public function getAllSessionCacheAndCacheKeys(){
+        Log::info( "getUserId - ". $this->getUserId());
+        Log::info( "getBusinessId top - ". $this->getBusinessId());
+        Log::info( "getUserType - ". $this->getUserType());
+        Log::info( "getUserTypeId - ". $this->getUserTypeId());
+        Log::info( "getUserProfileId - ". $this->getUserProfileId());
+        Log::info( "isDeveloper - ". $this->isDeveloper());
+        Log::info( "isSuperAdmin - ". $this->isSuperAdmin());
+        Log::info( "getUserContextLayer - ". $this->getUserContextLayer());
+        Log::info( "getUserContextLayerId - ". $this->getUserContextLayerId());
+        Log::info( "isTenantUser - ". $this->isTenantUser());
+        Log::info( "getTimezone - ". $this->getTimezone());
+        Log::info( "getLanguage - ". $this->getLanguage());
+        Log::info( "getSessionToken - ". $this->getSessionToken());
+        Log::info("getAvailableProfiles - ". json_encode($this->getAvailableProfiles()));
+        Log::info("getCurrentProfile - ". json_encode($this->getCurrentProfile()));
+        Log::info("getPermissionCacheKey - ". json_encode($this->getPermissionCacheKey()));
+        Log::info("getSidebarMenuCacheKey - ". json_encode($this->getSidebarMenuCacheKey()));
+        Log::info("getBusinessId bottom - ". $this->getBusinessId());
     }
 
     /**
-     * Forgets all context-related session variables on user logout.
+     * ✅ Forgets all context-related session variables on user logout.
      *
      * @return void
      */
     public function forgetContext(): void
     {
+        // Also clear the cached profiles on logout
+        // $this->clearAvailableProfilesCache();
         Session::forget([
             self::SESSION_USER_ID,
             self::SESSION_USER_PROFILE_ID,
@@ -374,9 +353,6 @@ class UserContextManager
             self::SESSION_USER_CONTEXT_LAYER,
             self::SESSION_USER_CONTEXT_LAYER_ID,
         ]);
-
-        // It's a good practice to clear profile cache on logout
-        $this->clearAvailableProfilesCache();
     }
 
     // 🔹 Getters (Get the current context values from the session)
