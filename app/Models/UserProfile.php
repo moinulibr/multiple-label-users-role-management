@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\HasRolesAndPermissions;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class UserProfile extends Model
 {
+    use HasRolesAndPermissions;
+    
     protected $fillable = [
         'user_id',
         'user_type_id',

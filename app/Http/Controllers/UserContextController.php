@@ -28,12 +28,11 @@ class UserContextController extends Controller
         ]);
 
         $profileId = $request->input('profile_id');
-        Log::info('switch profile controller -'. $profileId);
         // set current profile
         $this->contextManager->setCurrentProfile($profileId);
 
         //after change - just for showing latest value of session
-        $this->contextManager->getAllSessionCacheAndCacheKeys();
+        //$this->contextManager->getAllSessionCacheAndCacheKeys();
         
         return redirect()->intended(route('dashboard'))->with('success', 'Profile Switched successfully।');
     }

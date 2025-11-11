@@ -16,9 +16,9 @@ use Illuminate\Support\Str;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasRolesAndPermissions;
+    use HasFactory, Notifiable;
 
-    protected $with = ['roles'];
+    /* protected $with = ['roles'];
     // Roles relationship
     public function roles()
     {
@@ -28,8 +28,10 @@ class User extends Authenticatable
             'user_id',
             'role_id'
         )->withPivot('business_id')->withTimestamps();
-    }
+    } */
+
     
+
     /**
      * The attributes that are mass assignable.
      *

@@ -25,7 +25,7 @@ class SidebarComposer
         // cache key: per user + per context layer + per business/profile
         $cacheKey = $contextManager->getSidebarMenuCacheKey();
         // Build (and cache) filtered menu
-        $menu = Cache::remember($cacheKey, now()->addMinutes(1), function () use ($user, $userContext) {
+        $menu = Cache::remember($cacheKey, now()->addMinutes(1), function () use ($userContext) {
             $menuConfig = config('sidebar', []);
             $filtered = [];
             foreach ($menuConfig as $item) {
@@ -68,7 +68,6 @@ class SidebarComposer
 
             return $filtered;
         });
-        Log::info("sidebar composer - menu cache - " . json_encode($menu));
         $view->with('menuItems', $menu);
     }
 

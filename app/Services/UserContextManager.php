@@ -86,9 +86,8 @@ class UserContextManager
         if (!$user) {
             return collect();
         }
-
-        $cacheKey = self::CACHED_PROFILES_KEY . ':' . $user->id;
-
+        $userProfileId = $this->getUserProfileId();
+        $cacheKey = self::CACHED_PROFILES_KEY . ':' . $userProfileId;
         return Cache::remember($cacheKey, now()->addMinutes(60), function () use ($user) {
             return $user->profiles()
                 ->active()
@@ -235,7 +234,8 @@ class UserContextManager
     {
         if (Auth::check()) {
             // Use Auth::id() for the cache key
-            Cache::forget(self::CACHED_PROFILES_KEY . ':' . Auth::id());
+            $userProfileId = $this->getUserProfileId();
+            Cache::forget(self::CACHED_PROFILES_KEY . ':' . $userProfileId);
         }
     }
 
@@ -253,7 +253,7 @@ class UserContextManager
         // Context ID is Business ID if present, otherwise Profile ID, otherwise the NULLABLE constant
         $contextId = $businessId ?? $userProfileId ?? self::NULLABLE_BUSINESS_OF_USER_PROFILE;
 
-        return "user_permissions:{$userId}:{$contextId}";
+        return "user_permissions:{$userProfileId}:{$contextId}";
     }
 
     /**
@@ -266,7 +266,7 @@ class UserContextManager
     {
         // Use profile's actual data, not current session data
         $contextId = $profile->business_id ?? $profile->id ?? 'global';
-        $cacheKey = "user_permissions:{$profile->user_id}:{$contextId}";
+        $cacheKey = "user_permissions:{$profile->id}:{$contextId}";
 
         Cache::forget($cacheKey);
     }
@@ -285,7 +285,7 @@ class UserContextManager
         $userContext = $this->getUserContextLayer() ?? self::NULLABLE_BUSINESS_OF_USER_PROFILE;
         $contextIdentifier = $businessId ? "business:{$businessId}" : "profile:{$userProfileId}";
 
-        return "sidebar_menu:{$userId}:{$userContext}:{$contextIdentifier}";
+        return "sidebar_menu:{$userProfileId}:{$userContext}:{$contextIdentifier}";
     }
 
     /**
@@ -300,7 +300,7 @@ class UserContextManager
         // For simplicity and correctness with the existing logic:
         $userContext = $this->getUserContextLayer() ?? self::NULLABLE_BUSINESS_OF_USER_PROFILE;
         $contextIdentifier = $profile->business_id ? "business:{$profile->business_id}" : "profile:{$profile->id}";
-        $cacheKey = "sidebar_menu:{$profile->user_id}:{$userContext}:{$contextIdentifier}";
+        $cacheKey = "sidebar_menu:{$profile->id}:{$userContext}:{$contextIdentifier}";
 
         Cache::forget($cacheKey);
     }
@@ -345,22 +345,22 @@ class UserContextManager
         // This method logs all current context values for debugging.
         // It relies on Laravel's Log facade, which is correct.
         Log::info("getUserId - " . $this->getUserId());
-        Log::info("getBusinessId - " . $this->getBusinessId());
         Log::info("getUserType - " . $this->getUserType());
         Log::info("getUserTypeId - " . $this->getUserTypeId());
+        Log::info("getBusinessId - " . $this->getBusinessId());
         Log::info("getUserProfileId - " . $this->getUserProfileId());
-        Log::info("isDeveloper - " . $this->isDeveloper());
-        Log::info("isSuperAdmin - " . $this->isSuperAdmin());
+        //Log::info("isDeveloper - " . $this->isDeveloper());
+        //Log::info("isSuperAdmin - " . $this->isSuperAdmin());
         Log::info("getUserContextLayer - " . $this->getUserContextLayer());
         Log::info("getUserContextLayerId - " . $this->getUserContextLayerId());
-        Log::info("isTenantUser - " . $this->isTenantUser());
-        Log::info("getTimezone - " . $this->getTimezone());
-        Log::info("getLanguage - " . $this->getLanguage());
-        Log::info("getSessionToken - " . $this->getSessionToken());
+        //Log::info("isTenantUser - " . $this->isTenantUser());
+        //Log::info("getTimezone - " . $this->getTimezone());
+        //Log::info("getLanguage - " . $this->getLanguage());
+        //Log::info("getSessionToken - " . $this->getSessionToken());
         Log::info("getAvailableProfiles - " . json_encode($this->getAvailableProfiles()));
         Log::info("getCurrentProfile - " . json_encode($this->getCurrentProfile()));
-        Log::info("getPermissionCacheKey - " . json_encode($this->getPermissionCacheKey()));
-        Log::info("getSidebarMenuCacheKey - " . json_encode($this->getSidebarMenuCacheKey()));
+        //Log::info("getPermissionCacheKey - " . json_encode($this->getPermissionCacheKey()));
+        //Log::info("getSidebarMenuCacheKey - " . json_encode($this->getSidebarMenuCacheKey()));
     }
 
     /**
