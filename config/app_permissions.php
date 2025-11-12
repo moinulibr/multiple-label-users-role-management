@@ -2,6 +2,14 @@
 
 return [
 
+    //configured in UserContextManager.php
+    //app_permissions.user_contexts_layer setting
+    'contextLayerSettings' => [
+        '' => []
+    ],
+
+
+
     /*
     |--------------------------------------------------------------------------
     | User Contexts (system-level contexts)

@@ -1,0 +1,141 @@
+.cdbc-container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+}
+
+.cdbc-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.cdbc-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.cdbc-col-left {
+    flex: 1;
+    min-width: 300px;
+}
+
+.cdbc-col-right {
+    flex: 1;
+    min-width: 300px;
+}
+
+.cdbc-card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.cdbc-card-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.cdbc-card label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.cdbc-card input,
+.cdbc-card select {
+    width: 100%;
+    padding: 8px 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
+.cdbc-required {
+    color: red;
+}
+
+.cdbc-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.cdbc-btn-primary {
+    background: #3490dc;
+    color: #fff;
+}
+
+.cdbc-btn-success {
+    background: #38c172;
+    color: #fff;
+}
+
+.cdbc-btn-warning {
+    background: #ff9800;
+    color: #fff;
+}
+
+.cdbc-btn-danger {
+    background: #e3342f;
+    color: #fff;
+}
+
+.cdbc-btn-info {
+    background: #6cb2eb;
+    color: #fff;
+}
+
+.cdbc-btn-secondary {
+    background: #95a5a6;
+    color: #fff;
+}
+
+.cdbc-profile-row {
+    margin-bottom: 10px;
+}
+
+.cdbc-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.cdbc-table th,
+.cdbc-table td {
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: left;
+}
+
+.cdbc-table th {
+    background: #f4f4f4;
+}
+
+.cdbc-search {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.cdbc-search input {
+    width: 300px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.cdbc-pagination {
+    margin-top: 20px;
+}
+
+/*--------------------------*/

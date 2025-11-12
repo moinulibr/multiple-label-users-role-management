@@ -3,11 +3,11 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SwitchAccountController;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\UserContextController;
-use App\Http\Controllers\UserController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\RoleController;
 use App\Services\UserContextManager;
 use Illuminate\Support\Facades\Route;
 
@@ -81,6 +81,26 @@ Route::middleware('auth')->prefix('profile')->name('profile.')->group(function (
         ->name('users.assignRoles')
         ->middleware('permission:users.assign');
 }); */
+
+
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+    // Roles
+    Route::resource('roles', RoleController::class)
+        ->except(['show'])
+        ->middleware('permission:roles.manage');
+
+    // Users
+    Route::get('users', [UserController::class, 'index'])->name('users.index')->middleware('permission:users.view');
+    Route::get('users/create', [UserController::class, 'create'])->name('users.create')->middleware('permission:users.create');
+    Route::post('users', [UserController::class, 'store'])->name('users.store')->middleware('permission:users.create');
+    Route::get('users/{user}', [UserController::class, 'show'])->name('users.show')->middleware('permission:users.view');
+    Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit')->middleware('permission:users.edit');
+    Route::put('users/{user}', [UserController::class, 'update'])->name('users.update')->middleware('permission:users.edit');
+    Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy')->middleware('permission:users.delete');
+    Route::post('users/{id}/restore', [UserController::class, 'restore'])->name('users.restore')->middleware('permission:users.edit');
+    Route::delete('users/{id}/force-delete', [UserController::class, 'forceDelete'])->name('users.forceDelete')->middleware('permission:users.delete');
+});
+
 
 require __DIR__.'/auth.php';
 
