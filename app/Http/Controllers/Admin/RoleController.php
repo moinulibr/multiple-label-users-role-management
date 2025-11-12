@@ -12,6 +12,9 @@ class RoleController extends Controller
 {
     public function index()
     {
+        $contextManager = app(UserContextManager::class);
+        $business_id = $businessId ?? $contextManager->getBusinessId();
+
         $roles = Role::latest()->paginate(10);
         return view('cdbc.roles.index', compact('roles'));
     }

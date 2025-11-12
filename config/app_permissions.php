@@ -4,9 +4,9 @@ return [
 
     //configured in UserContextManager.php
     //app_permissions.user_contexts_layer setting
-    'contextLayerSettings' => [
-        '' => []
-    ],
+    'fixedUserType' => [1 => 'super_admin', 2 => 'admin',3=>'owner'],
+
+    'contextLayerSettings' => [],
 
 
 

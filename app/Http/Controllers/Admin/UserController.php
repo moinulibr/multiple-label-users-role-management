@@ -7,11 +7,20 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\UserType;
 use App\Models\Business;
+use App\Services\UserContextManager;
 
 class UserController extends Controller
 {
     public function index(Request $request)
     {
+        config('app_permissions.fixedUserType')[1];//super_admin,
+        config('app_permissions.fixedUserType')[2];//admin,
+        //target business - is_prime == true, then consider it as a super_admin/mother/parent company - software ownership
+        //if logged in user is a super_admin, then show all users [with businesses]
+        //if logged in user business is is_prime == true, then show only users of that business
+        $contextManager = app(UserContextManager::class);
+        $business_id = $businessId ?? $contextManager->getBusinessId();
+
         $query = User::query();
 
         if ($request->search) {
