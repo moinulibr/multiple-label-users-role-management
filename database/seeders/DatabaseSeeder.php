@@ -16,8 +16,8 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
 
         $this->call([
-            UserTypeSeeder::class, // প্রথমে User Types
-            InitialDataSeeder::class, // তারপর বাকি সব ডেটা
+            UserTypeSeeder::class,
+            InitialDataSeeder::class,
 
             RolesSeeder::class,
         ]);

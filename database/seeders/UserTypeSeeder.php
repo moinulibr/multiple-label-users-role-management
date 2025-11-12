@@ -19,6 +19,14 @@ class UserTypeSeeder extends Seeder
                 'status' => true,
             ],
             [
+                'name' => 'admin',
+                'display_name' => 'Admin',
+                'dashboard_key' => 'admin',
+                'login_template_key' => 'admin',
+                'login_template_hash_key' => '21232f297a57a5a743894a0e4a801fc3',
+                'status' => true,
+            ],
+            [
                 'name' => 'rent_owner',
                 'display_name' => 'Rent Owner',
                 'dashboard_key' => 'admin',

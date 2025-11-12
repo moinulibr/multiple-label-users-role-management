@@ -294,6 +294,7 @@ class InitialDataSeeder extends Seeder
                 'platform_hash_key' => '5eaaf16a98fae359e253d21e6bccb2c2',
                 'login_template_hash_key' => [
                     'ed49c3fed75a513a79cb8bd1d4715d57',
+                    '21232f297a57a5a743894a0e4a801fc3',
                     'e8b57d0da4580dc2ca4e10512f0cab39',
                     '2e768fdf59df1b11930dcbb9a257f62f',
                     'e2d45d57c7e2941b65c6ccd64af4223e',
@@ -302,6 +303,22 @@ class InitialDataSeeder extends Seeder
                     'cd9bcdcbf9ef392bb2bce89a7c150638'
                 ],
                 'status' => true,
+            ],
+            [
+                'name' => 'Web Admin',
+                'platform_key' => 'WEB_ADMIN_PANEL_KEY',
+                'platform_hash_key' => '5eaaf16a98fae359e253d21e6bccb2c2',
+                'login_template_hash_key' => [
+                    'ed49c3fed75a513a79cb8bd1d4715d57',
+                    '21232f297a57a5a743894a0e4a801fc3',
+                    'e8b57d0da4580dc2ca4e10512f0cab39',
+                    '2e768fdf59df1b11930dcbb9a257f62f',
+                    'e2d45d57c7e2941b65c6ccd64af4223e',
+                    '1253208465b1efa876f982d8a9e73eef',
+                    '91ec1f9324753048c0096d036a694f86-',//wrong for admin panel [this users type can not login from web]
+                    'cd9bcdcbf9ef392bb2bce89a7c150638-'//wrong for admin panel [this users type can not login from web]
+                ],
+                'status' => false,
             ],
             [
                 'name' => 'Web Customer Panel',

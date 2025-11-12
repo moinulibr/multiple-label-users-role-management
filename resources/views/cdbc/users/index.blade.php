@@ -14,10 +14,10 @@
             <tr>
                 <th>ID</th>
                 <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
+                <th>Email & Phone</th>
+                <th>Profiles & Business</th>
+                <th>Role</th>
                 <th>Status</th>
-                <th>Profiles</th>
                 <th>Action</th>
             </tr>
         </thead>
@@ -26,12 +26,16 @@
             <tr>
                 <td>{{ $u->id }}</td>
                 <td>{{ $u->name }}</td>
-                <td>{{ $u->email }}</td>
-                <td>{{ $u->phone }}</td>
+                <td>
+                  {{ $u->email }}
+                  <br/>
+                  {{ $u->phone }}
+                </td>
+                <td>{{ $u->profiles->count() }}</td>
+                <td></td>
                 <td>
                     @if($u->status==1) Active @elseif($u->status==0) Inactive @else Suspended @endif
                 </td>
-                <td>{{ $u->profiles->count() }}</td>
                 <td>
                     <a href="{{ route('admin.users.show',$u->id) }}" class="cdbc-btn cdbc-btn-info">Show</a>
                     <a href="{{ route('admin.users.edit',$u->id) }}" class="cdbc-btn cdbc-btn-warning">Edit</a>
