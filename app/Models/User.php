@@ -18,19 +18,6 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
-    /* protected $with = ['roles'];
-    // Roles relationship
-    public function roles()
-    {
-        return $this->belongsToMany(
-            Role::class,
-            'role_user',
-            'user_id',
-            'role_id'
-        )->withPivot('business_id')->withTimestamps();
-    } */
-
-    
 
     /**
      * The attributes that are mass assignable.

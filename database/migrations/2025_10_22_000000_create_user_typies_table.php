@@ -12,6 +12,7 @@ return new class extends Migration {
             $table->string('name', 50)->unique()->comment('Logic key: e.g. super_admin, rent_owner, car_owner, driver, referral, customer');
             $table->string('display_name', 100)->nullable()->comment('Display label for UI');
             $table->string('dashboard_key', 50)->nullable()->comment('Example: admin, provider, customer → used to load sidebar/module access');
+            $table->boolean('visiblity')->default(false)->comment('true = visible in UI - when user creating or updating, false = disable');
             $table->boolean('status')->default(true)->comment('true = enable, false = disable');
             $table->string('login_template_key', 50)->unique()->comment('Login key (string): its send from login panel');
             $table->string('login_template_hash_key', 100)->unique()->comment('Login key (string): its send from login panel');

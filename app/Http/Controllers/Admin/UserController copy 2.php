@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\UserType;
 use App\Models\Business;
-use App\Models\Role;
 use App\Models\UserProfile;
 use App\Services\UserContextManager;
 use Illuminate\Support\Facades\Log; // Added for debugging/logging
@@ -38,8 +37,7 @@ class UserController extends Controller
 
         $isPrimeCompany = $profile->business?->is_prime ?? false;
 
-        $queryProfiles = UserProfile::select('user_id', 'business_id', 'user_type_id')
-            ->where('status', true);
+        $queryProfiles = UserProfile::select('user_id', 'business_id', 'user_type_id')->where('status', true);
 
         if ($isPrimeCompany) {
             if ($userType === $superAdminType) {
@@ -65,36 +63,17 @@ class UserController extends Controller
                 'profiles.roles:id,display_name'
             ])
             ->whereIn('id', $allowsUserIds)
-            ->when(
-                $request->search,
-                fn($q, $v) =>
-                $q->where(
-                    fn($sub) =>
-                    $sub->where('name', 'like', "%$v%")
-                        ->orWhere('email', 'like', "%$v%")
-                        ->orWhere('phone', 'like', "%$v%")
-                )
-            )
-            ->when($request->status, fn($q, $v) => $q->where('status', $v))
-            ->when($request->business_id, function ($q, $v) {
-                $q->whereHas('profiles.business', fn($sub) => $sub->where('business_id', $v));
-            })
-            ->when($request->user_type_id, function ($q, $v) {
-                $q->whereHas('profiles.userType', fn($sub) => $sub->where('user_type_id', $v));
-            })
-            ->when($request->role_id, function ($q, $v) {
-                $q->whereHas('profiles.roles', fn($sub) => $sub->where('roles.id', $v));
+            ->when($request->search, function ($q, $search) {
+                $q->where(function ($sub) use ($search) {
+                    $sub->where('name', 'like', "%$search%")
+                        ->orWhere('email', 'like', "%$search%")
+                        ->orWhere('phone', 'like', "%$search%");
+                });
             })
             ->orderByDesc('id')
-            ->paginate(10)
-            ->appends($request->query());
+            ->paginate(10);
 
-        // For filter dropdowns
-        $businesses = Business::select('id', 'name')->get();
-        $userTypes = UserType::select('id', 'display_name')->where('status', 1)->get();
-        $roles = Role::select('id', 'display_name', 'name')->get();
-
-        return view('cdbc.users.index', compact('users', 'businesses', 'userTypes', 'roles'));
+        return view('cdbc.users.index', compact('users'));
     }
 
     /**
