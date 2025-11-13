@@ -62,7 +62,7 @@ class DynamicLoginController extends Controller
                 $query->where('phone', 'like', '%' . $lastTenDigits)
                     ->orWhere('phone', 'like', '0' . $lastTenDigits)
                     ->orWhere('phone', 'like', '880' . $lastTenDigits);
-            })->first();
+            })->where('status', true)->first();
         }
         return $user;
     }

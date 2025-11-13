@@ -13,7 +13,6 @@
             @endif
 
             <div class="cdbc-row">
-                <!-- Left Column: User Info -->
                 <div class="cdbc-col-left">
                     <div class="cdbc-card">
                         <h3 class="cdbc-card-title">User Information</h3>
@@ -50,7 +49,6 @@
                     </div>
                 </div>
 
-                <!-- Right Column: User Profiles -->
                 <div class="cdbc-col-right">
                     <div class="cdbc-card">
                         <h3 class="cdbc-card-title">User Profiles</h3>
@@ -62,14 +60,23 @@
                         @if ($isSoftwareOwnerEmployee)
                             <div class="cdbc-card business-assignment-card">
                                 <h4 class="cdbc-card-subtitle">Assign User To:</h4>
+                                @php
+                                    // এডিটের সময় যদি ইউজারের কোনো প্রোফাইল অন্য বিজনেসের হয়ে থাকে
+                                    $hasAnotherBusinessProfile = isset($user) && $user->profiles->contains(function($profile) use ($currentBusinessId) {
+                                        return $profile->business_id != $currentBusinessId;
+                                    });
+                                    // old() অথবা এডিটের ভিত্তিতে রেডিও বাটন চেক করা
+                                    $radioValue = old('business_assignment_type', $hasAnotherBusinessProfile ? 'another' : 'own');
+                                @endphp
+                                
                                 <div class="cdbc-checkbox">
-                                    <input type="radio" id="own_business" name="business_assignment_type" value="own" checked>
+                                    <input type="radio" id="own_business" name="business_assignment_type" value="own" {{ $radioValue == 'own' ? 'checked' : '' }}>
                                     <label for="own_business">
                                         Own Business: <strong>{{ $currentBusinessName }}</strong>
                                     </label>
                                 </div>
                                 <div class="cdbc-checkbox">
-                                    <input type="radio" id="another_business" name="business_assignment_type" value="another">
+                                    <input type="radio" id="another_business" name="business_assignment_type" value="another" {{ $radioValue == 'another' ? 'checked' : '' }}>
                                     <label for="another_business">
                                         User for another business (Show Dropdown)
                                     </label>
@@ -79,16 +86,35 @@
 
                         <div id="profiles-container">
                             @php
-                                $profiles = old('profiles', isset($user) ? $user->profiles->toArray() : [[]]);
+                                // বিদ্যমান প্রোফাইল ডেটা বা পুরানো ডেটা সঠিকভাবে কনভার্ট করে লোড করা
+                                $existingProfiles = isset($user) ? $user->profiles->map(function($profile) {
+                                    return [
+                                        'user_type_id' => $profile->user_type_id,
+                                        'business_id' => $profile->business_id,
+                                        'default_login' => $profile->default_login,
+                                    ];
+                                })->toArray() : [[]]; 
+                                
+                                $profiles = old('profiles', $existingProfiles);
+
+                                // নিশ্চিত করা যে প্রতিটি প্রোফাইল একটি অ্যাসোসিয়েটিভ অ্যারে, অবজেক্ট নয়
+                                $profiles = array_map(function($p) {
+                                    return (array) $p;
+                                }, $profiles);
                             @endphp
 
                             @foreach($profiles as $p)
                                 <div class="cdbc-profile-row">
                                     <div class="cdbc-profile-selects">
+                                        {{-- User Type Select --}}
                                         <select name="profiles[{{$loop->index}}][user_type_id]" required>
                                             <option value="">Select User Type</option>
                                             @foreach($userTypes as $ut)
-                                                <option value="{{ $ut->id }}" {{ (isset($p['user_type_id']) && $p['user_type_id'] == $ut->id) ? 'selected' : '' }}>
+                                                @php
+                                                    $current_user_type_id = $p['user_type_id'] ?? null;
+                                                    $isSelected = ($current_user_type_id == $ut->id);
+                                                @endphp
+                                                <option value="{{ $ut->id }}" {{ $isSelected ? 'selected' : '' }}>
                                                     {{ $ut->display_name }}
                                                 </option>
                                             @endforeach
@@ -102,27 +128,47 @@
                                                     <input type="hidden" name="profiles[{{$loop->index}}][business_id]" value="{{ $currentBusinessId }}">
                                                     <input type="text" value="{{ $currentBusinessName }}" disabled style="min-width:150px; background:#f0f0f0;">
                                                 @else
+                                                    @php
+                                                        $current_business_id = $p['business_id'] ?? null;
+                                                        // যদি current_business_id থাকে এবং তা বর্তমান বিজনেসের না হয়, তবে ড্রপডাউন দেখাবে (Edit Mode এর জন্য)
+                                                        $showDropdownInitially = isset($user) && $current_business_id && $current_business_id != $currentBusinessId;
+                                                        
+                                                        // তবে যদি old() ডেটা থেকে আসে, তখন রেডিও বাটনের ভ্যালু 'another' হলে ড্রপডাউন দেখাবে
+                                                        if (!isset($user) && old('business_assignment_type', 'own') == 'another') {
+                                                            $showDropdownInitially = true;
+                                                        }
+
+                                                        $hiddenInputName = $showDropdownInitially ? "profiles[{$loop->index}][business_id]_disabled" : "profiles[{$loop->index}][business_id]";
+                                                        $dropdownName = $showDropdownInitially ? "profiles[{$loop->index}][business_id]" : "profiles[{$loop->index}][business_id]_disabled";
+                                                        
+                                                    @endphp
+                                                    
                                                     {{-- Software Owner Employee: Dynamic Field (Dropdown or Hidden) --}}
                                                     
-                                                    {{-- Default (Own Business) Hidden Field (Used when 'own_business' radio is checked) --}}
+                                                    {{-- Default (Own Business) Hidden Field --}}
                                                     <input type="hidden" 
-                                                           name="profiles[{{$loop->index}}][business_id]" 
-                                                           class="business-input-own business-input-{{ $loop->index }}" 
-                                                           value="{{ $currentBusinessId }}">
+                                                            name="{{ $hiddenInputName }}" 
+                                                            class="business-input-own business-input-{{ $loop->index }}" 
+                                                            value="{{ $currentBusinessId }}"
+                                                            {{ $showDropdownInitially ? 'disabled' : '' }}>
                                                     
                                                     {{-- Default (Own Business) Text Field --}}
                                                     <input type="text" 
-                                                           value="{{ $currentBusinessName }}" 
-                                                           class="business-text-own business-text-{{ $loop->index }}" 
-                                                           disabled style="min-width:150px; background:#f0f0f0; display:block;">
+                                                            value="{{ $currentBusinessName }}" 
+                                                            class="business-text-own business-text-{{ $loop->index }}" 
+                                                            disabled style="min-width:150px; background:#f0f0f0; display:{{ $showDropdownInitially ? 'none' : 'block' }};">
 
-                                                    {{-- Dropdown for Another Business (Hidden by default) --}}
-                                                    <select name="profiles[{{$loop->index}}][business_id]" 
+                                                    {{-- Dropdown for Another Business --}}
+                                                    <select name="{{ $dropdownName }}" 
                                                             class="business-dropdown business-dropdown-{{ $loop->index }}" 
-                                                            style="display:none; min-width:150px;">
+                                                            style="display:{{ $showDropdownInitially ? 'block' : 'none' }}; min-width:150px;"
+                                                            {{ $showDropdownInitially ? '' : 'disabled' }}>
                                                         <option value="">Select Business</option>
                                                         @foreach($businesses as $b)
-                                                            <option value="{{ $b->id }}" {{ (isset($p['business_id']) && $p['business_id'] == $b->id) ? 'selected' : '' }}>
+                                                            @php
+                                                                $isSelected = ($current_business_id == $b->id);
+                                                            @endphp
+                                                            <option value="{{ $b->id }}" {{ $isSelected ? 'selected' : '' }}>
                                                                 {{ $b->name }}
                                                             </option>
                                                         @endforeach
@@ -135,7 +181,10 @@
 
                                     <div class="cdbc-profile-checkbox-row">
                                         <div class="cdbc-checkbox profile-checkbox">
-                                            <input type="checkbox" name="profiles[{{$loop->index}}][default_login]" class="default-login" {{ (isset($p['default_login']) && $p['default_login']) ? 'checked' : '' }}>
+                                            @php
+                                                $isDefaultLogin = $p['default_login'] ?? false;
+                                            @endphp
+                                            <input type="checkbox" name="profiles[{{$loop->index}}][default_login]" class="default-login" {{ $isDefaultLogin ? 'checked' : '' }}>
                                             <label>Default Login</label>
                                         </div>
                                         <button type="button" class="cdbc-btn cdbc-btn-danger remove-profile">X Remove</button>
@@ -156,7 +205,11 @@
             
             {{-- Hidden field to signal to the controller whether the Software Owner employee chose 'Own Business' --}}
             @if ($isSoftwareOwnerEmployee)
-                <input type="hidden" name="create_for_own_business" id="create_for_own_business" value="1">
+                @php
+                    // যদি 'another' সিলেক্ট করা থাকে, তবে ডিফল্ট ভ্যালু 0 হবে, অন্যথায় 1
+                    $hiddenValue = $radioValue == 'another' ? '0' : '1';
+                @endphp
+                <input type="hidden" name="create_for_own_business" id="create_for_own_business" value="{{ $hiddenValue }}">
             @endif
         </form>
     </div>
@@ -215,7 +268,8 @@
 
     @push('script')
         <script>
-            let profileCount = {{ count($profiles) }};
+            // profileCount শুরু হবে বিদ্যমান প্রোফাইলের সংখ্যা থেকে, এবং add-এর সময় এটি বাড়বে
+            let profileCount = {{ count($profiles) }}; 
             const userTypes = @json($userTypes);
             const businesses = @json($businesses);
             const isSoftwareOwnerEmployee = {{ $isSoftwareOwnerEmployee ? 'true' : 'false' }};
@@ -234,22 +288,31 @@
                 
                 if (!dropdown || !inputOwn || !textOwn) return;
                 
+                // Base name for the input field
+                const baseName = `profiles[${profileIndex}][business_id]`;
+
                 if (isOwnBusinessSelected) {
                     // Show Own Business (Hidden Input + Disabled Text), Hide Dropdown
                     dropdown.style.display = 'none';
                     dropdown.disabled = true;
+                    dropdown.name = `${baseName}_disabled`; // Deactivate dropdown name
+
                     inputOwn.type = 'hidden'; // Make sure the hidden field is active
+                    inputOwn.disabled = false;
+                    inputOwn.name = baseName; // Activate hidden input
+                    
                     textOwn.style.display = 'block';
-                    inputOwn.name = `profiles[${profileIndex}][business_id]`; // Activate hidden input
-                    dropdown.name = `profiles[${profileIndex}][business_id]_disabled`; // Deactivate dropdown name
                 } else {
                     // Show Dropdown, Hide Own Business Fields
                     dropdown.style.display = 'block';
                     dropdown.disabled = false;
+                    dropdown.name = baseName; // Activate dropdown name
+
                     inputOwn.type = 'text'; // Deactivate hidden input (turn it into a non-submittable field)
+                    inputOwn.disabled = true;
+                    inputOwn.name = `${baseName}_disabled`; // Deactivate hidden input name
+                    
                     textOwn.style.display = 'none';
-                    dropdown.name = `profiles[${profileIndex}][business_id]`; // Activate dropdown name
-                    inputOwn.name = `profiles[${profileIndex}][business_id]_disabled`; // Deactivate hidden input name
                 }
             }
             
@@ -271,18 +334,20 @@
                             </div>
                         `;
                     } else {
-                        // Software Owner Employee: Dynamic selection
+                        // Software Owner Employee: Dynamic selection.
+                        // Default to 'Own Business' when adding a new row.
+                        
                         businessHtml = `
                             <div class="business-field-container" data-index="${index}">
                                 <input type="hidden" 
-                                       name="profiles[${index}][business_id]" 
-                                       class="business-input-own business-input-${index}" 
-                                       value="${currentBusinessId}">
+                                        name="profiles[${index}][business_id]" 
+                                        class="business-input-own business-input-${index}" 
+                                        value="${currentBusinessId}">
                                 <input type="text" 
-                                       value="${currentBusinessName}" 
-                                       class="business-text-own business-text-${index}" 
-                                       disabled style="min-width:150px; background:#f0f0f0; display:block;">
-                                       
+                                        value="${currentBusinessName}" 
+                                        class="business-text-own business-text-${index}" 
+                                        disabled style="min-width:150px; background:#f0f0f0; display:block;">
+                                        
                                 <select name="profiles[${index}][business_id]_disabled" 
                                         class="business-dropdown business-dropdown-${index}" 
                                         style="display:none; min-width:150px;" disabled>
@@ -316,6 +381,7 @@
                 
                 // Initialize visibility for the new row if Software Owner
                 if (isSoftwareOwnerEmployee) {
+                    // নতুন প্রোফাইল তৈরি করার সময়, এটি রেডিও বাটনের নির্বাচিত ভ্যালু অনুসরণ করবে
                     const isOwnSelected = document.getElementById('own_business').checked;
                     updateBusinessFieldVisibility(index, isOwnSelected);
                 }
@@ -353,7 +419,9 @@
 
             // 2. Initialize Existing Profiles and attach listeners
             document.querySelectorAll('.cdbc-profile-row').forEach((row, i) => {
-                const index = row.querySelector('.business-field-container')?.dataset.index || i;
+                // profileCount কে 0 থেকে শুরু করে সঠিক index ব্যবহার করা হচ্ছে 
+                // তবে data-index attribute ব্যবহার করে আরও সঠিক index ব্যবহার করা উচিত
+                const index = row.querySelector('.business-field-container')?.dataset.index || i; 
                 attachProfileRowListeners(row, index);
             });
 
@@ -389,7 +457,7 @@
                 anotherBusinessRadio.addEventListener('change', handleBusinessAssignmentChange);
 
                 // Initial run to set the correct state on page load/edit
-                // We use a slight delay for existing profiles that might be rendered from old() or $user->profiles
+                // রেডিও বাটনের প্রাথমিক ভ্যালু ধরে নিয়ে সঠিক দৃশ্যমানতা সেট করা।
                 setTimeout(() => {
                     handleBusinessAssignmentChange();
                 }, 10);
