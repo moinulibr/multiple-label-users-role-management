@@ -104,7 +104,16 @@ class UserController extends Controller
     {
         $context = app(UserContextManager::class);
         $profile = $context->getCurrentProfile();
-        $userTypes = UserType::where('status', 1)->get();
+
+        $isPrimeCompany = $profile->business?->is_prime ?? false;
+
+        $superAdminType = config('app_permissions.fixedUserType')[1];
+        $adminType = config('app_permissions.fixedUserType')[2];
+
+        $userTypes = UserType::where('status', 1)
+            ->whereNotIn('name', [$superAdminType, $adminType])
+            ->where('dashboard_key', $adminType)
+            ->get();
 
         // Determine if the logged-in user is an employee of the Software Owner Company (is_prime = true)
         $isSoftwareOwnerEmployee = $profile->business?->is_prime ?? false;
@@ -120,6 +129,8 @@ class UserController extends Controller
 
         // Check if the current user has a business assigned (should always be true for admins/employees)
         $hasBusinessAssigned = !empty($currentBusinessId);
+        
+        $roles = Role::where('status', 1)->where('business_id', $currentBusinessId)->get();
 
         return view('cdbc.users.create', compact(
             'userTypes',
@@ -127,7 +138,9 @@ class UserController extends Controller
             'isSoftwareOwnerEmployee',
             'currentBusinessName',
             'currentBusinessId',
-            'hasBusinessAssigned'
+            'hasBusinessAssigned',
+            'roles',
+            'isPrimeCompany'
         ));
     }
 
@@ -202,7 +215,16 @@ class UserController extends Controller
         // Replicating create() logic for edit to pass context
         $context = app(UserContextManager::class);
         $profile = $context->getCurrentProfile();
-        $userTypes = UserType::where('status', 1)->get();
+
+        $isPrimeCompany = $profile->business?->is_prime ?? false;
+
+        $superAdminType = config('app_permissions.fixedUserType')[1];
+        $adminType = config('app_permissions.fixedUserType')[2];
+    
+        $userTypes = UserType::where('status', 1)
+            ->whereNotIn('name', [$superAdminType, $adminType])
+            ->where('dashboard_key', $adminType)
+            ->get();
 
         $isSoftwareOwnerEmployee = $profile->business?->is_prime ?? false;
         $businesses = collect();
@@ -214,7 +236,8 @@ class UserController extends Controller
         $currentBusinessId = $profile->business?->id ?? null;
         $hasBusinessAssigned = !empty($currentBusinessId);
 
-
+        $roles = Role::where('status', 1)->where('business_id', $currentBusinessId)->get();   
+        
         return view('cdbc.users.create', compact(
             'user',
             'userTypes',
@@ -222,7 +245,9 @@ class UserController extends Controller
             'isSoftwareOwnerEmployee',
             'currentBusinessName',
             'currentBusinessId',
-            'hasBusinessAssigned'
+            'hasBusinessAssigned',
+            'roles',
+            'isPrimeCompany'
         ));
     }
 

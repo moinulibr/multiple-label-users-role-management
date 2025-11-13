@@ -53,6 +53,19 @@
                     <div class="cdbc-card">
                         <h3 class="cdbc-card-title">User Profiles</h3>
                         
+                        <div class="cdbc-card business-assignment-card" style="border: 1px solid #ddd">
+                            <h4 class="cdbc-card-subtitle">Role Assignment:</h4>
+                            
+                            <select name="" required>
+                                <option value="">Select User Role</option>
+                                @foreach($roles as $role)
+                                    <option value="{{ $role->id }}">
+                                        {{ $role->display_name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        
                         {{-- 
                             BUSINESS SELECTION LOGIC (ONLY FOR PRIME/SOFTWARE OWNER EMPLOYEE) 
                             Tenant employees will skip this section and automatically be assigned to their own business.
@@ -61,11 +74,9 @@
                             <div class="cdbc-card business-assignment-card">
                                 <h4 class="cdbc-card-subtitle">Assign User To:</h4>
                                 @php
-                                    // এডিটের সময় যদি ইউজারের কোনো প্রোফাইল অন্য বিজনেসের হয়ে থাকে
                                     $hasAnotherBusinessProfile = isset($user) && $user->profiles->contains(function($profile) use ($currentBusinessId) {
                                         return $profile->business_id != $currentBusinessId;
                                     });
-                                    // old() অথবা এডিটের ভিত্তিতে রেডিও বাটন চেক করা
                                     $radioValue = old('business_assignment_type', $hasAnotherBusinessProfile ? 'another' : 'own');
                                 @endphp
                                 
@@ -86,7 +97,6 @@
 
                         <div id="profiles-container">
                             @php
-                                // বিদ্যমান প্রোফাইল ডেটা বা পুরানো ডেটা সঠিকভাবে কনভার্ট করে লোড করা
                                 $existingProfiles = isset($user) ? $user->profiles->map(function($profile) {
                                     return [
                                         'user_type_id' => $profile->user_type_id,
@@ -97,7 +107,6 @@
                                 
                                 $profiles = old('profiles', $existingProfiles);
 
-                                // নিশ্চিত করা যে প্রতিটি প্রোফাইল একটি অ্যাসোসিয়েটিভ অ্যারে, অবজেক্ট নয়
                                 $profiles = array_map(function($p) {
                                     return (array) $p;
                                 }, $profiles);
@@ -194,19 +203,19 @@
                         </div>
 
                         <button type="button" class="cdbc-btn cdbc-btn-primary" id="add-profile-btn">+ Add Profile</button>
+                    
+                        <hr/>
+                        <div class="cdbc-btn-row">
+                            <button type="submit" class="cdbc-btn cdbc-btn-success">{{ isset($user) ? 'Update User' : 'Create User' }}</button>
+                            <a href="{{ route('admin.users.index') }}" class="cdbc-btn cdbc-btn-secondary">Back</a>
+                        </div>
+                        
                     </div>
                 </div>
             </div>
-
-            <div class="cdbc-btn-row">
-                <button type="submit" class="cdbc-btn cdbc-btn-success">{{ isset($user) ? 'Update User' : 'Create User' }}</button>
-                <a href="{{ route('admin.users.index') }}" class="cdbc-btn cdbc-btn-secondary">Back</a>
-            </div>
-            
             {{-- Hidden field to signal to the controller whether the Software Owner employee chose 'Own Business' --}}
             @if ($isSoftwareOwnerEmployee)
                 @php
-                    // যদি 'another' সিলেক্ট করা থাকে, তবে ডিফল্ট ভ্যালু 0 হবে, অন্যথায় 1
                     $hiddenValue = $radioValue == 'another' ? '0' : '1';
                 @endphp
                 <input type="hidden" name="create_for_own_business" id="create_for_own_business" value="{{ $hiddenValue }}">
@@ -381,11 +390,9 @@
                 
                 // Initialize visibility for the new row if Software Owner
                 if (isSoftwareOwnerEmployee) {
-                    // নতুন প্রোফাইল তৈরি করার সময়, এটি রেডিও বাটনের নির্বাচিত ভ্যালু অনুসরণ করবে
                     const isOwnSelected = document.getElementById('own_business').checked;
                     updateBusinessFieldVisibility(index, isOwnSelected);
                 }
-
 
                 // Attach event listeners
                 attachProfileRowListeners(row, index);
@@ -419,8 +426,8 @@
 
             // 2. Initialize Existing Profiles and attach listeners
             document.querySelectorAll('.cdbc-profile-row').forEach((row, i) => {
-                // profileCount কে 0 থেকে শুরু করে সঠিক index ব্যবহার করা হচ্ছে 
-                // তবে data-index attribute ব্যবহার করে আরও সঠিক index ব্যবহার করা উচিত
+                // profileCount  start from 0 index  
+                // data-index attribute 
                 const index = row.querySelector('.business-field-container')?.dataset.index || i; 
                 attachProfileRowListeners(row, index);
             });
@@ -457,7 +464,6 @@
                 anotherBusinessRadio.addEventListener('change', handleBusinessAssignmentChange);
 
                 // Initial run to set the correct state on page load/edit
-                // রেডিও বাটনের প্রাথমিক ভ্যালু ধরে নিয়ে সঠিক দৃশ্যমানতা সেট করা।
                 setTimeout(() => {
                     handleBusinessAssignmentChange();
                 }, 10);
