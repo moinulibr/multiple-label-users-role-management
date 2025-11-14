@@ -136,6 +136,8 @@ class UserController extends Controller
         
         $roles = Role::where('status', 1)->where('business_id', $currentBusinessId)->get();
 
+        $currentSelectedRoleId  = null;
+        
         return view('cdbc.users.create', compact(
             'userTypes',
             'businesses', // All businesses (for prime company user), or empty (for tenant user)
@@ -146,6 +148,7 @@ class UserController extends Controller
             'roles',
             'isPrimeCompany',
             'currentRoles',
+            'currentSelectedRoleId',
             'profile'
         ));
     }
