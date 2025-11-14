@@ -19,18 +19,33 @@
 
                         <label>Name <span class="cdbc-required">*</span></label>
                         <input type="text" name="name" value="{{ old('name', $user->name ?? '') }}" placeholder="Name">
+                        @error('name')
+                            <p class="cdbc-error-message">{{ $message }}</p>
+                        @enderror
 
                         <label>Email <span class="cdbc-required">*</span></label>
                         <input type="email" name="email" value="{{ old('email', $user->email ?? '') }}" placeholder="Email Address">
+                        @error('email')
+                            <p class="cdbc-error-message">{{ $message }}</p>
+                        @enderror
 
                         <label>Phone <span class="cdbc-required">*</span></label>
                         <input type="text" name="phone" value="{{ old('phone', $user->phone ?? '') }}" placeholder="Primary Phone">
+                        @error('phone')
+                            <p class="cdbc-error-message">{{ $message }}</p>
+                        @enderror
 
                         <label>Secondary Phone</label>
                         <input type="text" name="secondary_phone" value="{{ old('secondary_phone', $user->secondary_phone ?? '') }}" placeholder="Secondary Phone">
+                        @error('secondary_phone')
+                            <p class="cdbc-error-message">{{ $message }}</p>
+                        @enderror
 
                         <label>Password {{ isset($user) ? '(Leave blank to keep current)' : '' }}</label>
                         <input type="password" name="password" placeholder="Password">
+                        @error('password')
+                            <p class="cdbc-error-message">{{ $message }}</p>
+                        @enderror
 
                         <label>Status</label>
                         <select name="status">
@@ -38,13 +53,16 @@
                             <option value="0" {{ (old('status', $user->status ?? '') == 0) ? 'selected' : '' }}>Inactive</option>
                             <option value="2" {{ (old('status', $user->status ?? '') == 2) ? 'selected' : '' }}>Suspended</option>
                         </select>
+                        @error('status')
+                            <p class="cdbc-error-message">{{ $message }}</p>
+                        @enderror
                         
                         {{-- Developer Access checkbox (commented out) --}}
-                        {{-- 
+                        {{--
                         <div class="cdbc-checkbox">
                             <input type="checkbox" name="is_developer" {{ old('is_developer', $user->is_developer ?? false) ? 'checked' : '' }}>
                             <label>Developer Access</label>
-                        </div> 
+                        </div>
                         --}}
                     </div>
                 </div>
@@ -56,18 +74,33 @@
                         <div class="cdbc-card business-assignment-card role-section-hidden" id="role-section">
                             <h4 class="cdbc-card-subtitle">Role Assignment:</h4>
 
-                            <select name="role_id" id="role-select-option">
+                            @php
+                                // Get the assigned role ID if exists for this business
+                                $currentRoleId = null;
+                                if(isset($user) && isset($currentBusinessId)) {
+                                    //$currentRole = $user->profiles()->with('roles')->where('business_id',$currentBusinessId)->first()?->roles->first();
+                                    //$currentRole = $profile->roles()->wherePivot('business_id', $currentBusinessId)->first();
+                                    $currentRoleId = $currentSelectedRoleId;// $currentRole ? $currentRole->id : null;
+                                }
+                               // dd($currentRoleId);
+                                $selectedRoleId = old('role_id', $currentRoleId);
+                            @endphp
+
+                            <select name="role_id" id="role-select-option" data-selected-role-id="{{ $selectedRoleId}}">
                                 <option value="">Select User Role</option>
                                 @foreach($roles as $role)
-                                    <option value="{{ $role->id }}">
+                                    <option value="{{ $role->id }}" {{ $selectedRoleId == $role->id ? 'selected' : '' }}>
                                         {{ $role->display_name }}
                                     </option>
                                 @endforeach
                             </select>
+                            @error('role_id')
+                                <p class="cdbc-error-message">{{ $message }}</p>
+                            @enderror
                         </div>
                         
-                        {{-- 
-                            BUSINESS SELECTION LOGIC (ONLY FOR PRIME/SOFTWARE OWNER EMPLOYEE) 
+                        {{--
+                            BUSINESS SELECTION LOGIC (ONLY FOR PRIME/SOFTWARE OWNER EMPLOYEE)
                             Tenant employees will skip this section and automatically be assigned to their own business.
                         --}}
                         @if ($isSoftwareOwnerEmployee)
@@ -95,6 +128,16 @@
                             </div>
                         @endif
 
+                        {{-- General Profile Validation Errors --}}
+                        @error('profiles')
+                            <p class="cdbc-error-message">{{ $message }}</p>
+                        @enderror
+                        @error('profiles.*.default_login')
+                            <p class="cdbc-error-message">{{ $message }}</p>
+                        @enderror
+                        {{-- Client-side warning container --}}
+                        <div id="duplicate-profile-warning-container"></div>
+                        
                         <div id="profiles-container">
                             @php
                                 $existingProfiles = isset($user) ? $user->profiles->map(function($profile) {
@@ -103,7 +146,7 @@
                                         'business_id' => $profile->business_id,
                                         'default_login' => $profile->default_login,
                                     ];
-                                })->toArray() : [[]]; 
+                                })->toArray() : [[]];
                                 
                                 $profiles = old('profiles', $existingProfiles);
 
@@ -113,10 +156,23 @@
                             @endphp
 
                             @foreach($profiles as $p)
-                                <div class="cdbc-profile-row">
+                                @php
+                                    $loopIndex = $loop->index;
+                                    $currentProfileBusinessId = $p['business_id'] ?? null;
+                                    // Check if this profile's business ID matches the current business ID (for initial setup)
+                                    $isOwnBusinessProfile = $currentProfileBusinessId == $currentBusinessId;
+
+                                    // Determine if dropdown should be shown initially based on edit context/old data
+                                    $showDropdownInitially = ($radioValue == 'another' || (!$isOwnBusinessProfile && isset($user)));
+                                    
+                                    $hiddenInputName = $showDropdownInitially ? "profiles[{$loopIndex}][business_id]_disabled" : "profiles[{$loopIndex}][business_id]";
+                                    $dropdownName = $showDropdownInitially ? "profiles[{$loopIndex}][business_id]" : "profiles[{$loopIndex}][business_id]_disabled";
+                                @endphp
+                                
+                                <div class="cdbc-profile-row" data-index="{{ $loopIndex }}">
                                     <div class="cdbc-profile-selects">
                                         {{-- User Type Select --}}
-                                        <select name="profiles[{{$loop->index}}][user_type_id]" required>
+                                        <select name="profiles[{{$loopIndex}}][user_type_id]" required>
                                             <option value="">Select User Type</option>
                                             @foreach($userTypes as $ut)
                                                 @php
@@ -128,54 +184,43 @@
                                                 </option>
                                             @endforeach
                                         </select>
+                                        {{-- User Type Error --}}
+                                        @error("profiles.$loopIndex.user_type_id")
+                                            <p class="cdbc-error-message">{{ $message }}</p>
+                                        @enderror
                                         
                                         {{-- Conditional Business Field --}}
                                         @if ($hasBusinessAssigned)
-                                            <div class="business-field-container" data-index="{{ $loop->index }}">
+                                            <div class="business-field-container" data-index="{{ $loopIndex }}">
                                                 @if (!$isSoftwareOwnerEmployee)
                                                     {{-- Tenant Employee: Force assign to current business (Hidden Field) --}}
-                                                    <input type="hidden" name="profiles[{{$loop->index}}][business_id]" value="{{ $currentBusinessId }}">
+                                                    <input type="hidden" name="profiles[{{$loopIndex}}][business_id]" value="{{ $currentBusinessId }}">
                                                     <input type="text" value="{{ $currentBusinessName }}" disabled style="min-width:150px; background:#f0f0f0;">
                                                 @else
-                                                    @php
-                                                        $current_business_id = $p['business_id'] ?? null;
-                                                        // যদি current_business_id থাকে এবং তা বর্তমান বিজনেসের না হয়, তবে ড্রপডাউন দেখাবে (Edit Mode এর জন্য)
-                                                        $showDropdownInitially = isset($user) && $current_business_id && $current_business_id != $currentBusinessId;
-                                                        
-                                                        // তবে যদি old() ডেটা থেকে আসে, তখন রেডিও বাটনের ভ্যালু 'another' হলে ড্রপডাউন দেখাবে
-                                                        if (!isset($user) && old('business_assignment_type', 'own') == 'another') {
-                                                            $showDropdownInitially = true;
-                                                        }
-
-                                                        $hiddenInputName = $showDropdownInitially ? "profiles[{$loop->index}][business_id]_disabled" : "profiles[{$loop->index}][business_id]";
-                                                        $dropdownName = $showDropdownInitially ? "profiles[{$loop->index}][business_id]" : "profiles[{$loop->index}][business_id]_disabled";
-                                                        
-                                                    @endphp
-                                                    
                                                     {{-- Software Owner Employee: Dynamic Field (Dropdown or Hidden) --}}
                                                     
                                                     {{-- Default (Own Business) Hidden Field --}}
-                                                    <input type="hidden" 
-                                                            name="{{ $hiddenInputName }}" 
-                                                            class="business-input-own business-input-{{ $loop->index }}" 
+                                                    <input type="hidden"
+                                                            name="{{ $hiddenInputName }}"
+                                                            class="business-input-own business-input-{{ $loopIndex }}"
                                                             value="{{ $currentBusinessId }}"
                                                             {{ $showDropdownInitially ? 'disabled' : '' }}>
                                                     
                                                     {{-- Default (Own Business) Text Field --}}
-                                                    <input type="text" 
-                                                            value="{{ $currentBusinessName }}" 
-                                                            class="business-text-own business-text-{{ $loop->index }}" 
+                                                    <input type="text"
+                                                            value="{{ $currentBusinessName }}"
+                                                            class="business-text-own business-text-{{ $loopIndex }}"
                                                             disabled style="min-width:150px; background:#f0f0f0; display:{{ $showDropdownInitially ? 'none' : 'block' }};">
 
                                                     {{-- Dropdown for Another Business --}}
-                                                    <select name="{{ $dropdownName }}" 
-                                                            class="business-dropdown business-dropdown-{{ $loop->index }}" 
+                                                    <select name="{{ $dropdownName }}"
+                                                            class="business-dropdown business-dropdown-{{ $loopIndex }}"
                                                             style="display:{{ $showDropdownInitially ? 'block' : 'none' }}; min-width:150px;"
                                                             {{ $showDropdownInitially ? '' : 'disabled' }}>
                                                         <option value="">Select Business</option>
                                                         @foreach($businesses as $b)
                                                             @php
-                                                                $isSelected = ($current_business_id == $b->id);
+                                                                $isSelected = ($currentProfileBusinessId == $b->id);
                                                             @endphp
                                                             <option value="{{ $b->id }}" {{ $isSelected ? 'selected' : '' }}>
                                                                 {{ $b->name }}
@@ -184,7 +229,16 @@
                                                     </select>
                                                 @endif
                                             </div>
+                                            {{-- Business ID Error --}}
+                                            @error("profiles.$loopIndex.business_id")
+                                                <p class="cdbc-error-message">{{ $message }}</p>
+                                            @enderror
                                         @endif
+                                        
+                                        {{-- Custom Duplication Error --}}
+                                        @error("profiles.$loopIndex.duplicate")
+                                            <p class="cdbc-error-message">{{ $message }}</p>
+                                        @enderror
                                         
                                     </div>
 
@@ -193,8 +247,8 @@
                                             @php
                                                 $isDefaultLogin = $p['default_login'] ?? false;
                                             @endphp
-                                            <input type="checkbox" id="defaultLogin" name="profiles[{{$loop->index}}][default_login]" class="default-login" {{ $isDefaultLogin ? 'checked' : '' }}>
-                                            <label for="defaultLogin">Default Login</label>
+                                            <input type="checkbox" id="defaultLogin_{{$loopIndex}}" name="profiles[{{$loopIndex}}][default_login]" class="default-login" {{ $isDefaultLogin ? 'checked' : '' }}>
+                                            <label for="defaultLogin_{{$loopIndex}}">Default Login</label>
                                         </div>
                                         <button type="button" class="cdbc-btn cdbc-btn-danger remove-profile">X Remove</button>
                                     </div>
@@ -250,7 +304,9 @@
             .cdbc-profile-checkbox-row .cdbc-checkbox { margin-bottom: 0; }
 
             /* --- Profile Row --- */
-            .cdbc-profile-row { border:1px solid #ddd; border-radius:6px; padding:10px; margin-bottom:10px; background:#fafafa; }
+            .cdbc-profile-row { border:1px solid #ddd; border-radius:6px; padding:10px; margin-bottom:10px; background:#fafafa; transition: border 0.3s; }
+            .cdbc-profile-row.duplicate { border: 2px solid #e74c3c; } /* Duplication highlight */
+
             .cdbc-profile-checkbox-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
             .cdbc-profile-selects { display:flex; gap:10px; flex-wrap:wrap; align-items: center; }
             .cdbc-profile-selects select, .business-field-container input[type="text"] { min-width:150px; padding:6px 8px; border-radius:4px; border:1px solid #ccc; margin-bottom: 0; }
@@ -272,6 +328,18 @@
             /* --- Title & Required --- */
             .cdbc-title { font-size:24px; font-weight:600; margin-bottom:20px; }
             .cdbc-required { color:#e74c3c; }
+            
+            /* --- Validation Error Message --- */
+            .cdbc-error-message {
+                color: #e74c3c;
+                font-size: 13px;
+                margin-top: -10px; 
+                margin-bottom: 12px;
+                width: 100%;
+            }
+            .cdbc-profile-selects > .cdbc-error-message {
+                order: 10; /* Push error message down */
+            }
 
             .role-section-hidden { display: none; border: 1px solid #ddd}
         </style>
@@ -279,7 +347,7 @@
 
     @push('script')
         <script>
-            let profileCount = {{ count($profiles) }}; 
+            let profileCount = {{ count($profiles) - 1 }}; // Start count based on existing profiles
             const userTypes = @json($userTypes);
             const businesses = @json($businesses);
             const isSoftwareOwnerEmployee = {{ $isSoftwareOwnerEmployee ? 'true' : 'false' }};
@@ -307,7 +375,6 @@
                     dropdown.disabled = true;
                     dropdown.name = `${baseName}_disabled`; // Deactivate dropdown name
 
-                    inputOwn.type = 'hidden'; // Make sure the hidden field is active
                     inputOwn.disabled = false;
                     inputOwn.name = baseName; // Activate hidden input
                     
@@ -318,12 +385,73 @@
                     dropdown.disabled = false;
                     dropdown.name = baseName; // Activate dropdown name
 
-                    inputOwn.type = 'hidden'; // Deactivate hidden input (turn it into a non-submittable field)
                     inputOwn.disabled = true;
                     inputOwn.name = `${baseName}_disabled`; // Deactivate hidden input name
                     
                     textOwn.style.display = 'none';
                 }
+            }
+            
+            // Function to check for duplicate profiles across all rows
+            function checkForDuplicateProfiles() {
+                const profilesContainer = document.getElementById('profiles-container');
+                const profileRows = profilesContainer.querySelectorAll('.cdbc-profile-row');
+                const profilesMap = new Map();
+                let isDuplicate = false;
+                
+                // Clear all previous highlight classes
+                profileRows.forEach(row => row.classList.remove('duplicate'));
+
+                profileRows.forEach(row => {
+                    const index = row.dataset.index;
+                    const userTypeSelect = row.querySelector(`select[name="profiles[${index}][user_type_id]"]`);
+                    let businessId = null;
+                    
+                    // 1. Determine the actual business ID for this profile row
+                    if (!hasBusinessAssigned) {
+                        return; // Skip check if no business can be assigned
+                    } else if (!isSoftwareOwnerEmployee || document.getElementById('own_business')?.checked) {
+                        // Tenant or Prime creating for Own Business: Use currentBusinessId
+                        businessId = currentBusinessId;
+                    } else {
+                        // Prime creating for Another Business: Use dropdown value (or hidden input if used)
+                        const activeInput = row.querySelector(`select[name="profiles[${index}][business_id]"]`);
+                        if(activeInput) {
+                            businessId = activeInput.value;
+                        }
+                    }
+
+                    const userTypeId = userTypeSelect ? userTypeSelect.value : null;
+                    
+                    // 2. Perform Duplication Check
+                    if (userTypeId && businessId) {
+                        const key = `${userTypeId}-${businessId}`;
+                        if (profilesMap.has(key)) {
+                            isDuplicate = true;
+                            row.classList.add('duplicate');
+                            profilesMap.get(key).classList.add('duplicate');
+                        } else {
+                            profilesMap.set(key, row);
+                        }
+                    }
+                });
+                
+                const warningContainer = document.getElementById('duplicate-profile-warning-container');
+                let duplicateMessage = document.getElementById('duplicate-profile-message');
+
+                if (isDuplicate) {
+                    if (!duplicateMessage) {
+                        duplicateMessage = document.createElement('p');
+                        duplicateMessage.id = 'duplicate-profile-message';
+                        duplicateMessage.className = 'cdbc-error-message';
+                        duplicateMessage.textContent = 'সতর্কতা: একই User Type এবং Business-এর প্রোফাইল ডুপ্লিকেট করা হয়েছে।';
+                        warningContainer.appendChild(duplicateMessage);
+                    }
+                } else {
+                    if (duplicateMessage) duplicateMessage.remove();
+                }
+
+                return isDuplicate; 
             }
             
             // Core logic for creating a new profile row
@@ -332,9 +460,15 @@
                 const index = profileCount;
                 const row = document.createElement('div');
                 row.className = 'cdbc-profile-row';
+                row.setAttribute('data-index', index); // Set data-index for easy reference
 
                 let businessHtml = '';
                 if (hasBusinessAssigned) {
+                    // Determine initial display based on radio buttons
+                    const isOwnBusinessSelected = document.getElementById('own_business')?.checked ?? true; // Default true for new row
+                    const hiddenInputName = isOwnBusinessSelected ? `profiles[${index}][business_id]` : `profiles[${index}][business_id]_disabled`;
+                    const dropdownName = isOwnBusinessSelected ? `profiles[${index}][business_id]_disabled` : `profiles[${index}][business_id]`;
+                    
                     if (!isSoftwareOwnerEmployee) {
                         // Tenant: Fixed to own business
                         businessHtml = `
@@ -345,24 +479,24 @@
                         `;
                     } else {
                         // Software Owner Employee: Dynamic selection.
-                        // Default to 'Own Business' when adding a new row.
-                        
                         businessHtml = `
                             <div class="business-field-container" data-index="${index}">
-                                <input type="hidden" 
-                                        name="profiles[${index}][business_id]" 
-                                        class="business-input-own business-input-${index}" 
-                                        value="${currentBusinessId}">
-                                <input type="text" 
-                                        value="${currentBusinessName}" 
-                                        class="business-text-own business-text-${index}" 
-                                        disabled style="min-width:150px; background:#f0f0f0; display:block;">
+                                <input type="hidden"
+                                        name="${hiddenInputName}"
+                                        class="business-input-own business-input-${index}"
+                                        value="${currentBusinessId}"
+                                        ${isOwnBusinessSelected ? '' : 'disabled'}>
+                                <input type="text"
+                                        value="${currentBusinessName}"
+                                        class="business-text-own business-text-${index}"
+                                        disabled style="min-width:150px; background:#f0f0f0; display:${isOwnBusinessSelected ? 'block' : 'none'};">
                                         
-                                <select name="profiles[${index}][business_id]_disabled" 
-                                        class="business-dropdown business-dropdown-${index}" 
-                                        style="display:none; min-width:150px;" disabled>
+                                <select name="${dropdownName}"
+                                        class="business-dropdown business-dropdown-${index}"
+                                        style="display:${isOwnBusinessSelected ? 'none' : 'block'}; min-width:150px;"
+                                        ${isOwnBusinessSelected ? 'disabled' : ''}>
                                     <option value="">Select Business</option>
-                                    ${businesses.map(b => `<option value="${b.id}" ${profile.business_id == b.id ? 'selected' : ''}>${b.name}</option>`).join('')}
+                                    ${businesses.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}
                                 </select>
                             </div>
                         `;
@@ -373,15 +507,15 @@
                     <div class="cdbc-profile-selects">
                         <select name="profiles[${index}][user_type_id]" required>
                             <option value="">Select User Type</option>
-                            ${userTypes.map(u => `<option value="${u.id}" ${profile.user_type_id == u.id ? 'selected' : ''}>${u.display_name}</option>`).join('')}
+                            ${userTypes.map(u => `<option value="${u.id}">${u.display_name}</option>`).join('')}
                         </select>
                         ${businessHtml}
                     </div>
 
                     <div class="cdbc-profile-checkbox-row">
                         <div class="cdbc-checkbox profile-checkbox">
-                            <input type="checkbox" name="profiles[${index}][default_login]" class="default-login" ${profile.default_login ? 'checked' : ''}>
-                            <label>Default Login</label>
+                            <input type="checkbox" id="defaultLogin_${index}" name="profiles[${index}][default_login]" class="default-login">
+                            <label for="defaultLogin_${index}">Default Login</label>
                         </div>
                         <button type="button" class="cdbc-btn cdbc-btn-danger remove-profile">X Remove</button>
                     </div>
@@ -389,14 +523,9 @@
 
                 document.getElementById('profiles-container').appendChild(row);
                 
-                // Initialize visibility for the new row if Software Owner
-                if (isSoftwareOwnerEmployee) {
-                    const isOwnSelected = document.getElementById('own_business').checked;
-                    updateBusinessFieldVisibility(index, isOwnSelected);
-                }
-
-                // Attach event listeners
+                // Attach event listeners and run check
                 attachProfileRowListeners(row, index);
+                checkForDuplicateProfiles();
             }
             
             // Function to attach listeners to profile rows
@@ -415,7 +544,15 @@
                 const removeBtn = row.querySelector('.remove-profile');
                 removeBtn.addEventListener('click', function() {
                     row.remove();
+                    checkForDuplicateProfiles(); // Check after removal
                 });
+
+                // Duplication check listeners
+                const userTypeSelect = row.querySelector('select[name*="[user_type_id]"]');
+                if (userTypeSelect) userTypeSelect.addEventListener('change', checkForDuplicateProfiles);
+
+                const businessDropdown = row.querySelector('.business-dropdown');
+                if (businessDropdown) businessDropdown.addEventListener('change', checkForDuplicateProfiles);
             }
 
             // --- Main Script Execution ---
@@ -426,21 +563,14 @@
             });
 
             // 2. Initialize Existing Profiles and attach listeners
-            document.querySelectorAll('.cdbc-profile-row').forEach((row, i) => {
-                // profileCount  start from 0 index  
-                // data-index attribute 
-                const index = row.querySelector('.business-field-container')?.dataset.index || i; 
+            document.querySelectorAll('.cdbc-profile-row').forEach(row => {
+                // Use the data-index attribute set in PHP or loop index
+                const index = row.dataset.index || profileCount;
                 attachProfileRowListeners(row, index);
             });
 
-            // 3. Ensure only one default login initially
-            const checkedBoxes = document.querySelectorAll('.default-login:checked');
-            if(checkedBoxes.length > 1){
-                checkedBoxes.forEach((cb, i) => { if(i > 0) cb.checked = false; });
-            }
 
-
-            // 4. Tenancy Logic (ONLY for Software Owner Employee)
+            // 3. Tenancy Logic (ONLY for Software Owner Employee)
             if (isSoftwareOwnerEmployee) {
                 const ownBusinessRadio = document.getElementById('own_business');
                 const anotherBusinessRadio = document.getElementById('another_business');
@@ -448,25 +578,42 @@
                 const ownBusinessHiddenInput = document.getElementById('create_for_own_business');
                 const roleSection = document.getElementById('role-section');
                 const roleSelectOption = document.getElementById('role-select-option');
+    
+                const initialSelectedRoleId = roleSelectOption.dataset.selectedRoleId;
+
                 function handleBusinessAssignmentChange() {
-                    roleSection.style.display = 'none';
                     const isOwnSelected = ownBusinessRadio.checked;
 
+                    // Role Section Visibility Logic
+                    roleSection.style.display = isOwnSelected ? 'block' : 'none';
                     if(isOwnSelected){
-                        roleSection.style.display = 'block';
-                    }else{
-                        roleSelectOption.value = '';
-                        roleSection.style.display = 'none';
+                        if (initialSelectedRoleId) {
+                        console.log(initialSelectedRoleId);
+                        roleSelectOption.value = initialSelectedRoleId; 
+                        console.log('Role Select Value Set to:', roleSelectOption.value);
                     }
+                    } else {
+                        roleSelectOption.value = ''; // Clear role selection
+                    }
+
+                    /* if(isOwnSelected){
+                        roleSelectOption.data-selected-role-id
+                    }
+                    if(!isOwnSelected) {
+                        roleSelectOption.value = ''; // Clear role if switching to another business
+                    } */
+                    
             
                     // Update controller signal hidden field
                     ownBusinessHiddenInput.value = isOwnSelected ? '1' : '0';
 
-                    // Update all existing and future profile rows
-                    profilesContainer.querySelectorAll('.business-field-container').forEach(container => {
-                        const index = container.dataset.index;
+                    // Update all existing profile rows (enable/disable dropdown/hidden field)
+                    profilesContainer.querySelectorAll('.cdbc-profile-row').forEach(row => {
+                        const index = row.dataset.index;
                         updateBusinessFieldVisibility(index, isOwnSelected);
                     });
+                    
+                    checkForDuplicateProfiles(); // Run check after business field state changes
                 }
                 
                 // Attach listeners to radio buttons
@@ -476,9 +623,30 @@
                 // Initial run to set the correct state on page load/edit
                 setTimeout(() => {
                     handleBusinessAssignmentChange();
+                    // Initial one default login check (ensure only one is checked)
+                    const checkedBoxes = document.querySelectorAll('.default-login:checked');
+                    if(checkedBoxes.length > 1){
+                        checkedBoxes.forEach((cb, i) => { if(i > 0) cb.checked = false; });
+                    }
                 }, 10);
             }
 
+            // 4. Client-side Duplication & Default Login Check before Submit
+            document.getElementById('user-form').addEventListener('submit', function(e) {
+                // Check if any profile has no default login selected
+                const defaultLoginCount = document.querySelectorAll('.default-login:checked').length;
+                
+                if (defaultLoginCount !== 1) {
+                    alert('ফর্মটি সাবমিট করার আগে ঠিক একটি প্রোফাইলকে ডিফল্ট লগইন হিসেবে নির্বাচন করতে হবে।');
+                    e.preventDefault();
+                    return;
+                }
+                
+                if (checkForDuplicateProfiles()) {
+                    alert('ফর্মটি সাবমিট করার আগে ডুপ্লিকেট প্রোফাইলগুলো (লাল বর্ডারযুক্ত) ঠিক করুন।');
+                    e.preventDefault();
+                }
+            });
         </script>
     @endpush
 </x-admin-layout>
