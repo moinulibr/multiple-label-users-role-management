@@ -47,6 +47,16 @@
     <div id="user-table-container">
         @include('cdbc.users.partials.table', ['users' => $users])
     </div>
+
+    <div class="cdbc-pagination-container">
+        <div class="pagination-details">
+            Showing {{ $users->firstItem() }} to {{ $users->lastItem() }} of {{ $users->total() }} results
+        </div>
+        <div class="pagination-links">
+            {{ $users->links('vendor.pagination.custom') }} 
+        </div>
+    </div>
+
 </div>
 
 @push('css')
@@ -124,6 +134,166 @@
     .link-info { color: #5c6bc0; }
     .link-warning { color: #ffb300; }
     .link-danger { color: #e53935; background: none; border: none; cursor: pointer; }
+    /* --- Action Links/Buttons --- */
+    .cdbc-action-btn { /* নতুন ক্লাস, যা নিচে সংজ্ঞায়িত করা হয়েছে */
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        text-align: center;
+        text-decoration: none;
+        margin-right: 4px;
+        transition: background 0.2s;
+        border: 1px solid transparent;
+    }
+    .link-info.cdbc-action-btn { background: #5c6bc0; color: #fff; border-color: #5c6bc0; } /* Show */
+    .link-info.cdbc-action-btn:hover { background: #4a59a7; }
+    
+    .link-warning.cdbc-action-btn { background: #ffb300; color: #333; border-color: #ffb300; } /* Edit */
+    .link-warning.cdbc-action-btn:hover { background: #e6a200; }
+    
+    /* Delete Button (Keep the same color scheme but apply button style) */
+    .link-danger.cdbc-action-btn { 
+        background: #e53935; 
+        color: #fff; 
+        border: none; /* Already defined as button in HTML */
+    }
+    .link-danger.cdbc-action-btn:hover { background: #c62828; }
+
+    /* --- Pagination Styling --- */
+ .cdbc-pagination-container {
+        margin-top: 20px;
+        display: flex;
+        justify-content: space-between; 
+        align-items: center;
+        padding: 10px 0;
+        font-size: 14px;
+    }
+    .cdbc-pagination-container .pagination-details {
+        color: #555;
+        font-weight: 500;
+    }
+
+    /* কাস্টম টেমপ্লেট (cdbc-pagination) অনুযায়ী CSS আপডেট করা */
+    .cdbc-pagination-links {
+        display: block; /* Flexbox ভেতরেই থাকবে */
+    }
+    .cdbc-pagination {
+        display: flex; /* UL কে Flex করা */
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .cdbc-pagination .cdbc-page-item {
+        margin: 0 2px;
+    }
+    .cdbc-pagination .cdbc-page-link {
+        display: block;
+        padding: 6px 10px;
+        text-decoration: none;
+        color: #6c63ff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        transition: 0.2s;
+        min-width: 32px;
+        text-align: center;
+        background: #fff;
+    }
+    .cdbc-pagination .cdbc-page-item:not(.active) .cdbc-page-link:hover {
+        background: #f0f0ff;
+    }
+    .cdbc-pagination .cdbc-page-item.active .cdbc-page-link,
+    .cdbc-pagination .cdbc-page-item.active .cdbc-page-link:hover {
+        background: #6c63ff;
+        color: #fff;
+        border-color: #6c63ff;
+    }
+    .cdbc-pagination .cdbc-page-item.disabled .cdbc-page-link {
+        color: #aaa;
+        background: #f9f9f9;
+        cursor: default;
+    }
+
+    /* --- Dropdown Action Styles --- */
+    .cdbc-action-dropdown-cell {
+        position: relative; /* Dropdown মেনু পজিশন করার জন্য প্রয়োজন */
+        width: 100px; /* অ্যাকশন সেলের জন্য জায়গা নিশ্চিত করা */
+    }
+    .cdbc-dropdown {
+        position: relative;
+        display: inline-block;
+    }
+    .cdbc-dropdown-toggle {
+        background: #6c63ff;
+        color: #fff;
+        border: 1px solid #6c63ff;
+        padding: 2px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 10px;
+        font-weight: 500;
+        transition: background 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .cdbc-dropdown-toggle:hover {
+        background: #5a54e0;
+    }
+
+    .cdbc-dropdown-menu {
+        position: absolute;
+        right: 0; /* ডানদিকে অ্যালাইন করা */
+        top: 100%;
+        min-width: 140px;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        z-index: 1000;
+        padding: 5px 0;
+        
+        /* Default state: hidden */
+        display: none; 
+        opacity: 0;
+        transform: translateY(10px);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    
+    /* Show state (added by JS) */
+    .cdbc-dropdown.show .cdbc-dropdown-menu {
+        display: block; 
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .cdbc-dropdown-item, .cdbc-dropdown-item-form {
+        display: block;
+        padding: 8px 7px;
+        text-decoration: none;
+        color: #333;
+        font-size: 13px;
+        white-space: nowrap;
+        background: none;
+        border: none;
+        width: 100%;
+        text-align: left;
+    }
+    /* Link Color Overrides */
+    .cdbc-dropdown-item.link-info { color: #5c6bc0; }
+    .cdbc-dropdown-item.link-warning { color: #ffb300; }
+    .cdbc-dropdown-item.link-danger { color: #e53935; }
+
+
+    .cdbc-dropdown-item:hover, .cdbc-dropdown-item-form:hover {
+        background: #f5f5f5;
+    }
+    /* Delete button inside form must match the link style */
+    .cdbc-dropdown-item-form button.cdbc-dropdown-item {
+        cursor: pointer;
+        padding: 8px 15px;
+    }
 </style>
 @endpush
 
@@ -144,6 +314,34 @@ document.getElementById('user-search').addEventListener('input', function(){
         document.querySelector('#user-table-container').innerHTML = newTable;
     });
 });
+
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.cdbc-dropdown-toggle').forEach(button => {
+            button.addEventListener('click', function() {
+                const dropdown = this.closest('.cdbc-dropdown');
+                
+                // Close all other open dropdowns
+                document.querySelectorAll('.cdbc-dropdown.show').forEach(openDropdown => {
+                    if (openDropdown !== dropdown) {
+                        openDropdown.classList.remove('show');
+                    }
+                });
+
+                // Toggle the current dropdown
+                dropdown.classList.toggle('show');
+            });
+        });
+
+        // Close dropdown if the user clicks outside
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.cdbc-dropdown')) {
+                document.querySelectorAll('.cdbc-dropdown.show').forEach(dropdown => {
+                    dropdown.classList.remove('show');
+                });
+            }
+        });
+    });
 </script>
 @endpush
 </x-admin-layout>

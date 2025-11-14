@@ -75,7 +75,7 @@ class UserController extends Controller
                         ->orWhere('phone', 'like', "%$v%")
                 )
             )
-            ->when($request->status, fn($q, $v) => $q->where('status', $v))
+            ->when(($request->status !== null && $request->status >= 0), fn($q, $v) => $q->where('status', $v))
             ->when($request->business_id, function ($q, $v) {
                 $q->whereHas('profiles.business', fn($sub) => $sub->where('business_id', $v));
             })
@@ -147,8 +147,10 @@ class UserController extends Controller
     /**
      * Modified store method to enforce business_id assignment based on user context.
      */
-    public function store(Request $request)
+    /*public function store(Request $request)
     {
+        return $request->role_id ?? '';
+        return $request->role_id?? 'nai';
         $request->validate([
             'name' => 'required',
             'email' => 'nullable|email|unique:users,email',
@@ -194,6 +196,9 @@ class UserController extends Controller
 
                 // If isSoftwareOwnerEmployee is true and create_for_own_business is false, 
                 // $businessIdToAssign should come directly from $p['business_id'] (the dropdown), which is correct.
+                if($request->role_id){
+                   
+                }
 
                 $user->profiles()->create([
                     'user_type_id' => $p['user_type_id'],
@@ -205,6 +210,68 @@ class UserController extends Controller
         }
 
         return redirect()->route('admin.users.index')->with('success', 'User created successfully!');
+    } */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required',
+            'email' => 'nullable|email|unique:users,email',
+            'phone' => 'required|unique:users,phone',
+            'password' => 'required|min:6',
+            'profiles.*.user_type_id' => 'required',
+        ]);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'secondary_phone' => $request->secondary_phone,
+            'password' => bcrypt($request->password),
+            'status' => $request->status ?? 1,
+            'is_developer' => $request->is_developer ?? 0,
+        ]);
+
+        // Context
+        $context = app(UserContextManager::class);
+        $currentProfile = $context->getCurrentProfile();
+        $isSoftwareOwnerEmployee = $currentProfile->business?->is_prime ?? false;
+        $currentBusinessId = $currentProfile->business?->id ?? null;
+
+        $roleId = $request->role_id ? (array) $request->role_id : []; // Make array
+
+        if ($request->profiles) {
+            foreach ($request->profiles as $p) {
+
+                $businessIdToAssign = $p['business_id'] ?? null;
+
+                // Tenant → force own business
+                if (!$isSoftwareOwnerEmployee) {
+                    $businessIdToAssign = $currentBusinessId;
+                    if (is_null($businessIdToAssign)) continue;
+                }
+                // Owner + checkbox
+                elseif ($isSoftwareOwnerEmployee && $request->input('create_for_own_business')) {
+                    $businessIdToAssign = $currentBusinessId;
+                }
+
+                // Create profile
+                $createdProfile = $user->profiles()->create([
+                    'user_type_id' => $p['user_type_id'],
+                    'business_id' => $businessIdToAssign,
+                    'default_login' => isset($p['default_login']) ? 1 : 0,
+                    'status' => 1
+                ]);
+
+                // Assign roles to this profile
+                if (!empty($roleId)) {
+                    $createdProfile->roles()->sync($roleId);  // pivot insert
+                }
+            }
+        }
+
+        return redirect()
+            ->route('admin.users.index')
+            ->with('success', 'User created successfully!');
     }
 
     /**
@@ -270,6 +337,73 @@ class UserController extends Controller
             'is_developer' => $request->is_developer ?? 0,
         ]);
 
+        // Context
+        $context = app(UserContextManager::class);
+        $currentProfile = $context->getCurrentProfile();
+        $isSoftwareOwnerEmployee = $currentProfile->business?->is_prime ?? false;
+        $currentBusinessId = $currentProfile->business?->id ?? null;
+
+        // Remove old profiles + pivot
+        foreach ($user->profiles as $oldProfile) {
+            $oldProfile->roles()->detach();
+        }
+        $user->profiles()->delete();
+
+        $roleId = $request->role_id ? (array) $request->role_id : [];
+
+        if ($request->profiles) {
+
+            foreach ($request->profiles as $p) {
+
+                $businessIdToAssign = $p['business_id'] ?? null;
+
+                if (!$isSoftwareOwnerEmployee) {
+                    $businessIdToAssign = $currentBusinessId;
+                    if (is_null($businessIdToAssign)) continue;
+                } elseif ($isSoftwareOwnerEmployee && $request->input('create_for_own_business')) {
+                    $businessIdToAssign = $currentBusinessId;
+                }
+
+                // Create new profile
+                $createdProfile = $user->profiles()->create([
+                    'user_type_id' => $p['user_type_id'],
+                    'business_id' => $businessIdToAssign,
+                    'default_login' => isset($p['default_login']) ? 1 : 0,
+                    'status' => 1
+                ]);
+
+                // Sync roles
+                if (!empty($roleId)) {
+                    $createdProfile->roles()->sync($roleId);
+                }
+            }
+        }
+
+        return redirect()
+            ->route('admin.users.index')
+            ->with('success', 'User updated successfully!');
+    }
+
+
+    /* public function update(Request $request, User $user)
+    {
+        $request->validate([
+            'name' => 'required',
+            'email' => "nullable|email|unique:users,email,$user->id",
+            'phone' => "required|unique:users,phone,$user->id",
+            'profiles.*.user_type_id' => 'required',
+        ]);
+
+        $user->update([
+            'name' => $request->name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'secondary_phone' => $request->secondary_phone,
+            'password' => $request->password ? bcrypt($request->password) : $user->password,
+            'status' => $request->status ?? 1,
+            'is_developer' => $request->is_developer ?? 0,
+        ]);
+
         // Get context for assignment logic
         $context = app(UserContextManager::class);
         $currentProfile = $context->getCurrentProfile();
@@ -305,7 +439,7 @@ class UserController extends Controller
         }
 
         return redirect()->route('admin.users.index')->with('success', 'User updated successfully!');
-    }
+    } */
 
     public function show(User $user)
     {

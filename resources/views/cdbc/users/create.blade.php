@@ -53,10 +53,10 @@
                     <div class="cdbc-card">
                         <h3 class="cdbc-card-title">User Profiles</h3>
                         
-                        <div class="cdbc-card business-assignment-card" style="border: 1px solid #ddd">
+                        <div class="cdbc-card business-assignment-card role-section-hidden" id="role-section">
                             <h4 class="cdbc-card-subtitle">Role Assignment:</h4>
-                            
-                            <select name="" required>
+
+                            <select name="role_id" id="role-select-option">
                                 <option value="">Select User Role</option>
                                 @foreach($roles as $role)
                                     <option value="{{ $role->id }}">
@@ -193,8 +193,8 @@
                                             @php
                                                 $isDefaultLogin = $p['default_login'] ?? false;
                                             @endphp
-                                            <input type="checkbox" name="profiles[{{$loop->index}}][default_login]" class="default-login" {{ $isDefaultLogin ? 'checked' : '' }}>
-                                            <label>Default Login</label>
+                                            <input type="checkbox" id="defaultLogin" name="profiles[{{$loop->index}}][default_login]" class="default-login" {{ $isDefaultLogin ? 'checked' : '' }}>
+                                            <label for="defaultLogin">Default Login</label>
                                         </div>
                                         <button type="button" class="cdbc-btn cdbc-btn-danger remove-profile">X Remove</button>
                                     </div>
@@ -205,8 +205,8 @@
                         <button type="button" class="cdbc-btn cdbc-btn-primary" id="add-profile-btn">+ Add Profile</button>
                     
                         <hr/>
-                        <div class="cdbc-btn-row">
-                            <button type="submit" class="cdbc-btn cdbc-btn-success">{{ isset($user) ? 'Update User' : 'Create User' }}</button>
+                        <div class="cdbc-btn-row" style="display: flex; justify-content: right">
+                            <button type="submit" class="cdbc-btn cdbc-btn-success" style="line-height: 24px">{{ isset($user) ? 'Update User' : '+ Create User' }}</button>
                             <a href="{{ route('admin.users.index') }}" class="cdbc-btn cdbc-btn-secondary">Back</a>
                         </div>
                         
@@ -272,12 +272,13 @@
             /* --- Title & Required --- */
             .cdbc-title { font-size:24px; font-weight:600; margin-bottom:20px; }
             .cdbc-required { color:#e74c3c; }
+
+            .role-section-hidden { display: none; border: 1px solid #ddd}
         </style>
     @endpush
 
     @push('script')
         <script>
-            // profileCount শুরু হবে বিদ্যমান প্রোফাইলের সংখ্যা থেকে, এবং add-এর সময় এটি বাড়বে
             let profileCount = {{ count($profiles) }}; 
             const userTypes = @json($userTypes);
             const businesses = @json($businesses);
@@ -317,7 +318,7 @@
                     dropdown.disabled = false;
                     dropdown.name = baseName; // Activate dropdown name
 
-                    inputOwn.type = 'text'; // Deactivate hidden input (turn it into a non-submittable field)
+                    inputOwn.type = 'hidden'; // Deactivate hidden input (turn it into a non-submittable field)
                     inputOwn.disabled = true;
                     inputOwn.name = `${baseName}_disabled`; // Deactivate hidden input name
                     
@@ -445,10 +446,19 @@
                 const anotherBusinessRadio = document.getElementById('another_business');
                 const profilesContainer = document.getElementById('profiles-container');
                 const ownBusinessHiddenInput = document.getElementById('create_for_own_business');
-                
+                const roleSection = document.getElementById('role-section');
+                const roleSelectOption = document.getElementById('role-select-option');
                 function handleBusinessAssignmentChange() {
+                    roleSection.style.display = 'none';
                     const isOwnSelected = ownBusinessRadio.checked;
-                    
+
+                    if(isOwnSelected){
+                        roleSection.style.display = 'block';
+                    }else{
+                        roleSelectOption.value = '';
+                        roleSection.style.display = 'none';
+                    }
+            
                     // Update controller signal hidden field
                     ownBusinessHiddenInput.value = isOwnSelected ? '1' : '0';
 
