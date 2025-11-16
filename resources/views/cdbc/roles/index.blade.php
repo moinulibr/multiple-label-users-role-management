@@ -19,6 +19,7 @@
                             <th>#</th>
                             <th>Display Name</th>
                             <th>System Name</th>
+                            <th>Business</th>
                             <th>Permissions</th>
                             <th>Action</th>
                         </tr>
@@ -29,6 +30,7 @@
                                 <td>{{ $loop->iteration }}</td>
                                 <td>{{ $role->display_name }}</td>
                                 <td>{{ $role->name }}</td>
+                                <td>{{ $role->business?->name }}</td>
                                 <td>{{ count(json_decode($role->permissions ?? '[]')) }}</td>
                                 <td>
                                     <a href="{{ route('admin.roles.edit', $role->id) }}" class="btn btn-sm btn-info">Edit</a>

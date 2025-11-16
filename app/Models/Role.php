@@ -9,6 +9,10 @@ class Role extends Model
 
     protected $guarded = ['id'];
 
+    /* protected $casts = [
+        'permissions' => 'array',
+    ]; */
+
     public function business()
     {
         return $this->belongsTo(Business::class);

@@ -139,7 +139,7 @@
     <!-- User Account Dropdown -->
     @auth
     <li class="dropdown user-menu">
-        <!-- Bootstrap JS লোড হওয়া আবশ্যক -->
+        <!-- Bootstrap JS-->
         <button class="dropdown-toggle nav-link" data-toggle="dropdown">
             <img src="{{ auth()->user()->profile_picture
                             ? auth()->user()->profile_picture
@@ -154,6 +154,7 @@
                     <span class="nav-text">My Profile</span>
                 </a>
             </li>
+            <li><a class="dropdown-link-item" href="#"><i class="mdi mdi-account-circle-outline"></i><span class="nav-text">{{ Auth::user()->name }}</span></a></li>
             <li><a class="dropdown-link-item" href="#"><i class="mdi mdi-email-outline"></i><span class="nav-text">Message</span><span class="badge badge-pill badge-primary">24</span></a></li>
             <li><a class="dropdown-link-item" href="#"><i class="mdi mdi-settings"></i><span class="nav-text">Account Setting</span></a></li>
 

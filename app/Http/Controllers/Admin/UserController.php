@@ -362,7 +362,7 @@ class UserController extends Controller
         $currentBusinessId = $profile->business?->id ?? null;
         $hasBusinessAssigned = !empty($currentBusinessId);
         $roles = Role::where('status', 1)->where('business_id', $currentBusinessId)->get();
-        return $user->profiles;
+        $user->profiles;
         $currentSelectedRoleId = $user->profiles()->with('roles')->where('business_id', 1)->first()?->roles->first()?->id;
 
         return view('cdbc.users.create', compact(
