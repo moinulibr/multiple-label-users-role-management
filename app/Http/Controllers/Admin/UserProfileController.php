@@ -11,6 +11,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class UserProfileController extends Controller
 {
@@ -32,6 +33,7 @@ class UserProfileController extends Controller
      */
     public function store(Request $request)
     {
+        return $request->all();
         // 1. Determine Validation Rules based on Owner Type
         $ownerType = $request->input('owner_type');
 
@@ -68,17 +70,17 @@ class UserProfileController extends Controller
             'phone2' => 'nullable|string|max:20',
             'website' => 'nullable|url|max:255',
             'address' => 'nullable|string|max:500',
-            'parent_business_id' => 'nullable|exists:businesses,id',
-            'is_prime' => 'boolean',
+            //'parent_business_id' => 'nullable|exists:businesses,id',
+            //'is_prime' => 'boolean',
             'can_manage_roles' => 'boolean',
-            'default_owner_type_key' => 'required|exists:user_types,name', // e.g., 'rent_owner'
+            //'default_owner_type_key' => 'required|exists:user_types,name', // e.g., 'rent_owner'
         ];
 
         // Merge and validate all rules
         $validated = $request->validate(array_merge($userValidationRules, $businessValidationRules));
-
+        Log::info('Validated Data: ' . json_encode($validated));
         try {
-            DB::beginTransaction();
+            //DB::beginTransaction();
             $ownerId = null;
 
             // 2. Handle Owner Creation/Assignment
@@ -97,7 +99,7 @@ class UserProfileController extends Controller
             } else {
                 $ownerId = $validated['user_id'];
             }
-
+            Log::info('Owner ID: ' . $ownerId);
             // 3. Create the Business
             $business = Business::create([
                 'name' => $validated['name'],
@@ -105,19 +107,19 @@ class UserProfileController extends Controller
                 'phone2' => $validated['phone2'],
                 'website' => $validated['website'],
                 'address' => $validated['address'],
-                'parent_business_id' => $validated['parent_business_id'],
-                'is_prime' => $request->has('is_prime'),
+                //'parent_business_id' => $validated['parent_business_id'],
+                //'is_prime' => $request->has('is_prime'),
                 // 'can_manage_roles' is generally stored on the business or the user's profile
                 'can_manage_roles' => $request->has('can_manage_roles'),
             ]);
 
             // 4. Assign Owner Profile to the Business (Assuming Business model has an owner relation via UserProfile)
-
+            $userTypes = 'admin';
             // Fetch the UserType model based on the key (e.g., 'rent_owner')
-            $ownerUserType = \App\Models\UserType::where('name', $validated['default_owner_type_key'])->firstOrFail();
+            $ownerUserType = UserType::where('name', $userTypes)->firstOrFail();
 
             // Create the UserProfile (Owner profile)
-            \App\Models\UserProfile::create([
+            UserProfile::create([
                 'user_id' => $ownerId,
                 'user_type_id' => $ownerUserType->id,
                 'business_id' => $business->id,
@@ -132,12 +134,12 @@ class UserProfileController extends Controller
 
             DB::commit();
 
-            return redirect()->route('businesses.index')
+            return redirect()->route('businesses.create')
                 ->with('success', 'Business created successfully and owner assigned.');
         } catch (\Exception $e) {
             DB::rollBack();
-            // Log the error for debugging
-            \Log::error('Business Creation Error: ' . $e->getMessage());
+            //Log the error for debugging
+            Log::error('Business Creation Error: ' . $e->getMessage());
 
             return back()->withInput()
                 ->with('error', 'An error occurred during business creation: ' . $e->getMessage());

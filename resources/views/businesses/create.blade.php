@@ -101,7 +101,7 @@
             cursor: pointer;
             font-weight: 500;
             color: #374151;
-            padding: 5px 0;
+            /* padding: 5px 0; */
             display: inline-flex;
             align-items: center;
         }
@@ -135,6 +135,11 @@
             border: none;
             color: #ffffff;
         }
+        .cdbc-btn-danger {
+            background-color: #f73e3e;
+            border: none;
+            color: #ffffff;
+        }
 
         /* Separator and Layout Enhancements */
         .cdbc-separator {
@@ -151,6 +156,9 @@
         }
 
         #new-user-fields { display: none; }
+        .custom-control-input {
+            opacity: 1 !important;
+        }
     </style>
     @endpush
 
@@ -290,11 +298,10 @@
                                     </div> {{-- End cdbc-owner-assignment --}}
 
                                     {{-- Other Settings --}}
-                                    <div class="form-group">
+                                    {{-- <div class="form-group">
                                         <label for="parent_business_id" class="cdbc-label">Parent Business (Sub-Tenancy)</label>
                                         <select name="parent_business_id" id="parent_business_id" class="cdbc-select @error('parent_business_id') is-invalid @enderror">
                                             <option value="">-- No Parent Business --</option>
-                                            {{-- $parentBusinesses variable comes from the Controller --}}
                                             @foreach ($parentBusinesses as $business)
                                                 <option value="{{ $business->id }}" {{ old('parent_business_id') == $business->id ? 'selected' : '' }}>
                                                     {{ $business->name }}
@@ -302,12 +309,12 @@
                                             @endforeach
                                         </select>
                                         @error('parent_business_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                                    </div>
+                                    </div> --}}
                                     
-                                    <div class="form-group custom-control custom-checkbox pt-2">
+                                    <!--<div class="form-group custom-control custom-checkbox pt-2">
                                         <input type="checkbox" class="custom-control-input" id="is_prime" name="is_prime" value="1" {{ old('is_prime') ? 'checked' : '' }}>
                                         <label class="custom-control-label cdbc-radio-label" for="is_prime">Software Ownership (Is Prime Business)</label>
-                                    </div>
+                                    </div>-->
                                     
                                     <div class="form-group custom-control custom-checkbox">
                                         <input type="checkbox" class="custom-control-input" id="can_manage_roles" name="can_manage_roles" value="1" {{ old('can_manage_roles', true) ? 'checked' : '' }}>
@@ -324,7 +331,7 @@
                                 <button type="submit" class="btn cdbc-btn cdbc-btn-success btn-lg">
                                     <i class="mdi mdi-check-circle-outline"></i> Create Business & Assign Owner
                                 </button>
-                                <a href="#" class="btn cdbc-btn cdbc-btn-secondary btn-lg ml-3">Cancel</a>
+                                <a href="#" class="btn cdbc-btn cdbc-btn-danger btn-lg ml-3">Cancel</a>
                             </div>
                         </form>
 
