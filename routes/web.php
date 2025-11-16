@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\BusinessController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\ProfileController;
@@ -8,6 +9,7 @@ use App\Http\Controllers\TestController;
 use App\Http\Controllers\UserContextController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\UserProfileController;
 use App\Services\UserContextManager;
 use Illuminate\Support\Facades\Route;
 
@@ -101,6 +103,25 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::delete('users/{id}/force-delete', [UserController::class, 'forceDelete'])->name('users.forceDelete')->middleware('permission:users.delete');
 });
 
+
+Route::prefix('businesses')->middleware(['auth'])->group(function () {
+    // বিজনেস তৈরি ও এডিট (এখানে শুধু Create/Store দেওয়া হলো)
+    Route::get('/create', [BusinessController::class, 'create'])->name('businesses.create');
+    Route::post('/', [BusinessController::class, 'store'])->name('businesses.store');
+    // অন্যান্য CRUD রুট প্রয়োজন হলে যোগ করুন:
+    // Route::get('/{business}/edit', [BusinessController::class, 'edit'])->name('businesses.edit');
+    // Route::put('/{business}', [BusinessController::class, 'update'])->name('businesses.update');
+});
+
+// User Profile Management Routes
+Route::prefix('users/{user}/profiles')->middleware(['auth'])->group(function () {
+    // একটি নির্দিষ্ট ইউজারের প্রোফাইল দেখার পেজ
+    Route::get('/', [UserProfileController::class, 'index'])->name('user.profiles.index');
+    // নতুন প্রোফাইল অ্যাসাইন করা
+    Route::post('/', [UserProfileController::class, 'store'])->name('user.profiles.store');
+    // প্রোফাইল রিমুভ করা
+    Route::delete('/{profile}', [UserProfileController::class, 'destroy'])->name('user.profiles.destroy');
+});
 
 require __DIR__.'/auth.php';
 

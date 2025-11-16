@@ -1,0 +1,224 @@
+/* Custom CSS for User Profile Management Page */
+
+/* --- Base & Container --- */
+.custom-card-container {
+    padding: 30px;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+/* --- Typography & Headers --- */
+.page-main-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #2d3436;
+    margin-bottom: 25px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #f0f0f0;
+}
+
+.section-header {
+    font-size: 20px;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #5d67e8;
+    /* Accent color for current profiles */
+    display: flex;
+    align-items: center;
+}
+
+/* --- Layout Utilities --- */
+.grid-cols-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.flex-end {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.flex-space-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* --- Form Elements --- */
+.custom-form-group {
+    margin-bottom: 15px;
+}
+
+.custom-form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #6c757d;
+    font-size: 13px;
+    text-transform: uppercase;
+}
+
+.custom-select {
+    width: 100%;
+    padding: 10px 15px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #343a40;
+    transition: border-color 0.3s ease;
+}
+
+.custom-select:focus {
+    border-color: #5d67e8;
+    box-shadow: 0 0 0 3px rgba(93, 103, 232, 0.1);
+    outline: none;
+}
+
+/* --- Buttons --- */
+.custom-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    font-size: 14px;
+}
+
+.custom-btn-primary {
+    background-color: #00b894;
+    /* Success/Add Profile */
+    color: #ffffff;
+}
+
+.custom-btn-primary:hover {
+    background-color: #00997f;
+}
+
+.custom-btn-danger {
+    background-color: transparent;
+    color: #ff6b6b;
+    /* Danger */
+    border: 1px solid #ff6b6b;
+}
+
+.custom-btn-danger:hover {
+    background-color: #ff6b6b;
+    color: #ffffff;
+}
+
+/* --- Profile Cards --- */
+.profile-card-wrapper {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+.custom-profile-card {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    border-left: 5px solid #5d67e8;
+    /* Primary Accent */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+}
+
+.custom-profile-card:hover {
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.card-title-profile {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 5px;
+    color: #343a40;
+}
+
+.profile-meta-list {
+    list-style: none;
+    padding: 0;
+    margin: 15px 0 0 0;
+    font-size: 14px;
+}
+
+.profile-meta-list li {
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px dotted #f0f0f0;
+    padding-bottom: 4px;
+}
+
+.profile-meta-list small {
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.profile-meta-list strong {
+    color: #2d3436;
+    font-weight: 600;
+}
+
+/* --- Badges --- */
+.custom-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+.badge-default {
+    background-color: #ffeaa7;
+    color: #a06e00;
+}
+
+.badge-active {
+    background-color: #b8e994;
+    color: #1b5e20;
+}
+
+.badge-secondary-status {
+    background-color: #dfe6e9;
+    color: #636e72;
+}
+
+/* --- Add New Profile Box --- */
+.add-profile-box {
+    background-color: #f7f9fc;
+    padding: 25px;
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
+}
+
+/* --- Message/Alerts (Inline Fallback) --- */
+.custom-alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    font-size: 15px;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.alert-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
