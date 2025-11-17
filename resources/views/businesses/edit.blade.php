@@ -5,9 +5,7 @@
         Edit Business: {{ $business->name }}
     </x-slot>
 
----
 
-    {{-- Custom CSS: ডিজাইন ঠিক রাখার জন্য সমস্ত প্রয়োজনীয় CSS --}}
     @push('css')
     <style>
         /* --- General & Typography --- */
@@ -160,7 +158,6 @@
     </style>
     @endpush
 
----
 
     {{-- Main Content ($slot) --}}
     
@@ -196,7 +193,6 @@
                             @method('PUT') {{-- PUT Method for Update --}}
                             
                             <div class="row">
-                                {{-- Grid Fix: col-12 যোগ করা হলো --}}
                                 <div class="col-12 col-md-7 cdbc-separator">
                                     <h4 class="mb-4 cdbc-section-title text-primary font-weight-bold">Business Details</h4>
                                     
@@ -236,7 +232,6 @@
                                     </div>
                                 </div>
                                 
-                                {{-- Grid Fix: col-12 যোগ করা হলো --}}
                                 <div class="col-12 col-md-5">
                                     <h4 class="mb-4 cdbc-section-title-alt font-weight-bold">Owner & System Settings</h4>
                                     
@@ -245,11 +240,8 @@
                                         {{-- Blade Logic for Initial State --}}
                                         @php
                                             $oldOwnerType = old('owner_type');
-                                            // যদি validation error থাকে এবং old('owner_type') সেট না হয়, তাহলে existing ধরে নেব যদি না new user field এ error থাকে। 
-                                            // যেহেতু এটি Edit Page, তাই ডিফল্ট existing হবে।
                                             $currentOwnerType = $oldOwnerType ?: 'existing'; 
                                             
-                                            // কিন্তু যদি new user field এ error থাকে, তবে initial state 'new' হবে।
                                             if ($errors->has('new_user_name') || $errors->has('new_user_phone') || $oldOwnerType == 'new') {
                                                 $currentOwnerType = 'new';
                                             }
