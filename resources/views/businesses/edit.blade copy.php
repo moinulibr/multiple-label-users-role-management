@@ -5,9 +5,7 @@
         Edit Business: {{ $business->name }}
     </x-slot>
 
----
-
-    {{-- Custom CSS: ডিজাইন ঠিক রাখার জন্য সমস্ত প্রয়োজনীয় CSS --}}
+    {{-- Custom CSS: create.blade.php থেকে সমস্ত CSS এখানে যুক্ত করা হলো --}}
     @push('css')
     <style>
         /* --- General & Typography --- */
@@ -22,7 +20,7 @@
         .cdbc-card {
             background-color: #ffffff;
             border-radius: 16px;
-            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.15); 
+            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.15); /* More pronounced shadow */
             overflow: hidden;
         }
 
@@ -67,8 +65,8 @@
 
         /* --- Dynamic Owner Assignment Section --- */
         .cdbc-owner-assignment {
-            background-color: #fdf2f8; 
-            border: 2px solid #ec4899; 
+            background-color: #fdf2f8; /* Light pink/success background for emphasis */
+            border: 2px solid #ec4899; /* Pink accent */
             border-radius: 12px;
             padding: 20px;
         }
@@ -103,6 +101,7 @@
             cursor: pointer;
             font-weight: 500;
             color: #374151;
+            /* padding: 5px 0; */
             display: inline-flex;
             align-items: center;
         }
@@ -125,12 +124,17 @@
         }
 
         .cdbc-btn-success:hover {
-            background-color: #ea580c; 
+            background-color: #ea580c; /* Darker Orange on hover */
             color: #ffffff;
             transform: translateY(-2px);
             box-shadow: 0 6px 15px rgba(249, 115, 22, 0.4);
         }
         
+        .cdbc-btn-secondary {
+            background-color: #9ca3af;
+            border: none;
+            color: #ffffff;
+        }
         .cdbc-btn-danger {
             background-color: #f73e3e;
             border: none;
@@ -142,7 +146,6 @@
             border-right: 1px solid #e5e7eb;
         }
         
-        /* Grid Fix: Mobile/Small Screen */
         @media (max-width: 768px) {
             .cdbc-separator {
                 border-right: none;
@@ -152,15 +155,13 @@
             }
         }
 
-        /* Hide new user fields initially (default state) */
+        /* Initial Hide for New User Fields */
         #new-user-fields { display: none; }
         .custom-control-input {
-            opacity: 1 !important; /* Fix for Bootstrap Radio/Checkbox visibility */
+            opacity: 1 !important;
         }
     </style>
     @endpush
-
----
 
     {{-- Main Content ($slot) --}}
     
@@ -196,12 +197,12 @@
                             @method('PUT') {{-- PUT Method for Update --}}
                             
                             <div class="row">
-                                {{-- Grid Fix: col-12 যোগ করা হলো --}}
-                                <div class="col-12 col-md-7 cdbc-separator">
+                                <div class="col-md-7 cdbc-separator">
                                     <h4 class="mb-4 cdbc-section-title text-primary font-weight-bold">Business Details</h4>
                                     
                                     <div class="form-group">
                                         <label for="name" class="cdbc-label">Business Name *</label>
+                                        {{-- Current Value Load করা --}}
                                         <input type="text" name="name" id="name" class="cdbc-input @error('name') is-invalid @enderror" value="{{ old('name', $business->name) }}" required>
                                         @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                     </div>
@@ -236,35 +237,28 @@
                                     </div>
                                 </div>
                                 
-                                {{-- Grid Fix: col-12 যোগ করা হলো --}}
-                                <div class="col-12 col-md-5">
+                                <div class="col-md-5">
                                     <h4 class="mb-4 cdbc-section-title-alt font-weight-bold">Owner & System Settings</h4>
                                     
                                     <div class="cdbc-owner-assignment mb-4">
                                         
-                                        {{-- Blade Logic for Initial State --}}
-                                        @php
-                                            $oldOwnerType = old('owner_type');
-                                            // যদি validation error থাকে এবং old('owner_type') সেট না হয়, তাহলে existing ধরে নেব যদি না new user field এ error থাকে। 
-                                            // যেহেতু এটি Edit Page, তাই ডিফল্ট existing হবে।
-                                            $currentOwnerType = $oldOwnerType ?: 'existing'; 
-                                            
-                                            // কিন্তু যদি new user field এ error থাকে, তবে initial state 'new' হবে।
-                                            if ($errors->has('new_user_name') || $errors->has('new_user_phone') || $oldOwnerType == 'new') {
-                                                $currentOwnerType = 'new';
-                                            }
-                                        @endphp
-                                        
                                         {{-- Owner Type Selection Radios --}}
                                         <label class="cdbc-label text-danger mb-3 font-weight-bold">Owner Management *</label>
-                                        <div class="d-flex mb-3 cdbc-owner-type-selection">
+                                        <div class="d-flex mb-3">
+                                            {{-- Old Owner type check করা হলো --}}
+                                            @php
+                                                $oldOwnerType = old('owner_type');
+                                                // যদি কোনো old input না থাকে, তবে বর্তমান user_id আছে, তাই 'existing' হিসেবে ধরা হলো।
+                                                $currentOwnerType = $oldOwnerType ?: 'existing'; 
+                                            @endphp
+
                                             <div class="custom-control custom-radio mr-4">
                                                 <input type="radio" id="owner_existing" name="owner_type" class="custom-control-input" value="existing" {{ $currentOwnerType == 'existing' ? 'checked' : '' }}>
-                                                <label class="custom-control-label cdbc-radio-label" for="owner_existing">Existing User</label>
+                                                <label class="cdbc-radio-label" for="owner_existing">Existing User</label>
                                             </div>
                                             <div class="custom-control custom-radio">
                                                 <input type="radio" id="owner_new" name="owner_type" class="custom-control-input" value="new" {{ $currentOwnerType == 'new' ? 'checked' : '' }}>
-                                                <label class="custom-control-label cdbc-radio-label" for="owner_new">Create New Owner</label>
+                                                <label class="cdbc-radio-label" for="owner_new">Create New Owner</label>
                                             </div>
                                         </div>
                                         
@@ -275,10 +269,9 @@
                                                 <label for="user_id" class="cdbc-label">Owner User *</label>
                                                 <select name="user_id" id="user_id" class="cdbc-select @error('user_id') is-invalid @enderror">
                                                     <option value="">-- Select an existing user --</option>
-                                                    {{-- $users variable comes from the Controller --}}
-                                                    @foreach ($users ?? [] as $user)
+                                                    @foreach ($users as $user)
                                                         <option value="{{ $user->id }}" 
-                                                                {{ old('user_id', $business->user_id) == $user->id ? 'selected' : '' }}>
+                                                            {{ old('user_id', $business->user_id) == $user->id ? 'selected' : '' }}>
                                                             {{ $user->name }} ({{ $user->phone }})
                                                         </option>
                                                     @endforeach
@@ -287,7 +280,7 @@
                                             </div>
                                         </div>
                                         
-                                        {{-- New User Fields (Initially hidden by JS/CSS) --}}
+                                        {{-- New User Fields --}}
                                         <div id="new-user-fields" class="cdbc-field-container">
                                             <p class="font-weight-bold text-danger mb-3">New Owner Account Details</p>
                                             <div class="form-group">
@@ -314,14 +307,14 @@
 
                                     </div> {{-- End cdbc-owner-assignment --}}
 
-                                    {{-- Other Settings --}}
                                     <div class="form-group custom-control custom-checkbox">
+                                        {{-- Checked state load করা --}}
                                         <input type="checkbox" class="custom-control-input" id="can_manage_roles" name="can_manage_roles" value="1" {{ old('can_manage_roles', $business->can_manage_roles) ? 'checked' : '' }}>
                                         <label class="custom-control-label cdbc-radio-label" for="can_manage_roles">Owner Can Manage Roles</label>
                                     </div>
 
                                     <div class="form-group custom-control custom-checkbox">
-                                        <input type="checkbox" class="custom-control-input" readonly name="user_type" value="admin" checked>
+                                        <input type="checkbox" class="custom-control-input" readonly  name="user_type" value="admin" checked>
                                         <label class="custom-control-label cdbc-radio-label" for="user_type">Dashboard Access: Admin Panel</label>
                                     </div>
                                     <input type="hidden" name="default_owner_type_key" value="admin"> 
@@ -343,9 +336,7 @@
         </div>
     </div>
     
----
-
-    @push('script')
+    @push('js')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const existingFieldsContainer = document.getElementById('existing-user-fields');
@@ -357,7 +348,6 @@
             const newUserName = document.getElementById('new_user_name');
             const newUserPhone = document.getElementById('new_user_phone');
             
-            // Function to toggle display and required attributes
             function toggleOwnerFields(type) {
                 if (type === 'existing') {
                     // Visuals
@@ -367,9 +357,9 @@
                     newFieldsContainer.classList.remove('cdbc-active-field-container');
 
                     // Required status for mandatory fields
-                    if (existingSelect) existingSelect.setAttribute('required', 'required');
-                    if (newUserName) newUserName.removeAttribute('required');
-                    if (newUserPhone) newUserPhone.removeAttribute('required');
+                    existingSelect.setAttribute('required', 'required');
+                    newUserName.removeAttribute('required');
+                    newUserPhone.removeAttribute('required');
                     
                 } else if (type === 'new') {
                     // Visuals
@@ -379,19 +369,26 @@
                     newFieldsContainer.classList.add('cdbc-active-field-container');
                     
                     // Required status for mandatory fields
-                    if (existingSelect) existingSelect.removeAttribute('required');
-                    if (newUserName) newUserName.setAttribute('required', 'required');
-                    if (newUserPhone) newUserPhone.setAttribute('required', 'required');
+                    existingSelect.removeAttribute('required');
+                    newUserName.setAttribute('required', 'required');
+                    newUserPhone.setAttribute('required', 'required');
                 }
             }
 
-            // Initial setup based on which radio button is checked (handled by Blade logic above)
-            // If the checked radio button changes, toggle the fields
-            let initialType = 'existing';
-            const checkedRadio = document.querySelector('input[name="owner_type"]:checked');
-            if (checkedRadio) {
-                initialType = checkedRadio.value;
-            }
+            // Initial setup based on checked radio button (handling old data)
+            let initialType = '{{ $currentOwnerType }}';
+            
+            // Validation error-এর পরে যদি নতুন User-এর কোনো field-এ error থাকে, বা old owner type 'new' থাকে
+            @if ($errors->has('new_user_name') || $errors->has('new_user_phone') || old('owner_type') == 'new')
+                initialType = 'new';
+                // নিশ্চিত করুন সঠিক রেডিও বাটন চেক করা আছে
+                const ownerNewRadio = document.getElementById('owner_new');
+                if(ownerNewRadio) ownerNewRadio.checked = true;
+            @else
+                // নিশ্চিত করুন 'existing' রেডিও বাটন চেক করা আছে
+                const ownerExistingRadio = document.getElementById('owner_existing');
+                if(ownerExistingRadio) ownerExistingRadio.checked = true;
+            @endif
             
             toggleOwnerFields(initialType);
             

@@ -337,7 +337,7 @@
                                 <button type="submit" class="btn cdbc-btn cdbc-btn-success btn-lg">
                                     <i class="mdi mdi-check-circle-outline"></i> Create Business & Assign Owner
                                 </button>
-                                <a href="#" class="btn cdbc-btn cdbc-btn-danger btn-lg ml-3">Cancel</a>
+                                <a href="{{ route('admin.businesses.index') }}" class="btn cdbc-btn cdbc-btn-danger btn-lg ml-3">Cancel</a>
                             </div>
                         </form>
 
