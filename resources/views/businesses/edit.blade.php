@@ -2,10 +2,10 @@
     
     {{-- Page Title (Named Slot: header) --}}
     <x-slot name="page_title">
-        Create New Business
+        Edit Business: {{ $business->name }}
     </x-slot>
 
-    {{-- Custom CSS for Best Design (using cdbc- prefix) --}}
+    {{-- Custom CSS: create.blade.php থেকে সমস্ত CSS এখানে যুক্ত করা হলো --}}
     @push('css')
     <style>
         /* --- General & Typography --- */
@@ -155,6 +155,7 @@
             }
         }
 
+        /* Initial Hide for New User Fields */
         #new-user-fields { display: none; }
         .custom-control-input {
             opacity: 1 !important;
@@ -169,7 +170,7 @@
             <div class="col-12">
                 <div class="cdbc-card">
                     <div class="cdbc-header-title">
-                        Business Information & Owner Assignment
+                        Updating Business Details & Owner Assignment
                     </div>
                     <div class="cdbc-body">
 
@@ -191,8 +192,9 @@
                             </div>
                         @endif
 
-                        <form action="{{ route('admin.businesses.store') }}" method="POST" id="create-business-form">
+                        <form action="{{ route('admin.businesses.update', $business->id) }}" method="POST" id="edit-business-form">
                             @csrf
+                            @method('PUT') {{-- PUT Method for Update --}}
                             
                             <div class="row">
                                 <div class="col-md-7 cdbc-separator">
@@ -200,13 +202,14 @@
                                     
                                     <div class="form-group">
                                         <label for="name" class="cdbc-label">Business Name *</label>
-                                        <input type="text" name="name" id="name" class="cdbc-input @error('name') is-invalid @enderror" value="{{ old('name') }}" required>
+                                        {{-- Current Value Load করা --}}
+                                        <input type="text" name="name" id="name" class="cdbc-input @error('name') is-invalid @enderror" value="{{ old('name', $business->name) }}" required>
                                         @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                     </div>
                                     
                                     <div class="form-group">
                                         <label for="email" class="cdbc-label">Official Email (Optional)</label>
-                                        <input type="email" name="email" id="email" class="cdbc-input @error('email') is-invalid @enderror" value="{{ old('email') }}">
+                                        <input type="email" name="email" id="email" class="cdbc-input @error('email') is-invalid @enderror" value="{{ old('email', $business->email) }}">
                                         @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                     </div>
                                     
@@ -214,14 +217,14 @@
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label for="phone2" class="cdbc-label">Secondary Phone (Optional)</label>
-                                                <input type="text" name="phone2" id="phone2" class="cdbc-input @error('phone2') is-invalid @enderror" value="{{ old('phone2') }}">
+                                                <input type="text" name="phone2" id="phone2" class="cdbc-input @error('phone2') is-invalid @enderror" value="{{ old('phone2', $business->phone2) }}">
                                                 @error('phone2')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label for="website" class="cdbc-label">Website URL (Optional)</label>
-                                                <input type="url" name="website" id="website" class="cdbc-input @error('website') is-invalid @enderror" value="{{ old('website') }}">
+                                                <input type="url" name="website" id="website" class="cdbc-input @error('website') is-invalid @enderror" value="{{ old('website', $business->website) }}">
                                                 @error('website')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                             </div>
                                         </div>
@@ -229,7 +232,7 @@
 
                                     <div class="form-group">
                                         <label for="address" class="cdbc-label">Full Address (Optional)</label>
-                                        <textarea name="address" id="address" rows="3" class="cdbc-textarea @error('address') is-invalid @enderror">{{ old('address') }}</textarea>
+                                        <textarea name="address" id="address" rows="3" class="cdbc-textarea @error('address') is-invalid @enderror">{{ old('address', $business->address) }}</textarea>
                                         @error('address')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                     </div>
                                 </div>
@@ -242,12 +245,19 @@
                                         {{-- Owner Type Selection Radios --}}
                                         <label class="cdbc-label text-danger mb-3 font-weight-bold">Owner Management *</label>
                                         <div class="d-flex mb-3">
+                                            {{-- Old Owner type check করা হলো --}}
+                                            @php
+                                                $oldOwnerType = old('owner_type');
+                                                // যদি কোনো old input না থাকে, তবে বর্তমান user_id আছে, তাই 'existing' হিসেবে ধরা হলো।
+                                                $currentOwnerType = $oldOwnerType ?: 'existing'; 
+                                            @endphp
+
                                             <div class="custom-control custom-radio mr-4">
-                                                <input type="radio" id="owner_existing" name="owner_type" class="custom-control-input" value="existing" checked>
+                                                <input type="radio" id="owner_existing" name="owner_type" class="custom-control-input" value="existing" {{ $currentOwnerType == 'existing' ? 'checked' : '' }}>
                                                 <label class="cdbc-radio-label" for="owner_existing">Existing User</label>
                                             </div>
                                             <div class="custom-control custom-radio">
-                                                <input type="radio" id="owner_new" name="owner_type" class="custom-control-input" value="new">
+                                                <input type="radio" id="owner_new" name="owner_type" class="custom-control-input" value="new" {{ $currentOwnerType == 'new' ? 'checked' : '' }}>
                                                 <label class="cdbc-radio-label" for="owner_new">Create New Owner</label>
                                             </div>
                                         </div>
@@ -259,9 +269,9 @@
                                                 <label for="user_id" class="cdbc-label">Owner User *</label>
                                                 <select name="user_id" id="user_id" class="cdbc-select @error('user_id') is-invalid @enderror">
                                                     <option value="">-- Select an existing user --</option>
-                                                    {{-- $users variable comes from the Controller --}}
                                                     @foreach ($users as $user)
-                                                        <option value="{{ $user->id }}" {{ old('user_id') == $user->id ? 'selected' : '' }}>
+                                                        <option value="{{ $user->id }}" 
+                                                            {{ old('user_id', $business->user_id) == $user->id ? 'selected' : '' }}>
                                                             {{ $user->name }} ({{ $user->phone }})
                                                         </option>
                                                     @endforeach
@@ -289,7 +299,7 @@
                                                 @error('new_user_email')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                             </div>
                                             <div class="form-group mb-0">
-                                                <label for="new_user_password" class="cdbc-label">Password (Optional)</label>
+                                                <label for="new_user_password" class="cdbc-label">Password (Optional - Leave blank to keep current password)</label>
                                                 <input type="password" name="new_user_password" id="new_user_password" class="cdbc-input @error('new_user_password') is-invalid @enderror">
                                                 @error('new_user_password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                             </div>
@@ -297,29 +307,9 @@
 
                                     </div> {{-- End cdbc-owner-assignment --}}
 
-                                    {{-- Other Settings --}}
-                                    {{-- <div class="form-group">
-                                        <label for="parent_business_id" class="cdbc-label">Parent Business (Sub-Tenancy)</label>
-                                        <select name="parent_business_id" id="parent_business_id" class="cdbc-select @error('parent_business_id') is-invalid @enderror">
-                                            <option value="">-- No Parent Business --</option>
-                                            @foreach ($parentBusinesses as $business)
-                                                <option value="{{ $business->id }}" {{ old('parent_business_id') == $business->id ? 'selected' : '' }}>
-                                                    {{ $business->name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                        @error('parent_business_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                                    </div> --}}
-                                    
-                                    {{-- @if(Auth::user()->is_developer)
-                                    <div class="form-group custom-control custom-checkbox pt-2">
-                                        <input type="checkbox" class="custom-control-input" id="is_prime" name="is_prime" value="1" {{ old('is_prime') ? 'checked' : '' }}>
-                                        <label class="custom-control-label cdbc-radio-label" for="is_prime">Software Ownership (Is Prime Business)</label>
-                                    </div>
-                                    @endif --}}
-
                                     <div class="form-group custom-control custom-checkbox">
-                                        <input type="checkbox" class="custom-control-input" id="can_manage_roles" name="can_manage_roles" value="1" {{ old('can_manage_roles', true) ? 'checked' : '' }}>
+                                        {{-- Checked state load করা --}}
+                                        <input type="checkbox" class="custom-control-input" id="can_manage_roles" name="can_manage_roles" value="1" {{ old('can_manage_roles', $business->can_manage_roles) ? 'checked' : '' }}>
                                         <label class="custom-control-label cdbc-radio-label" for="can_manage_roles">Owner Can Manage Roles</label>
                                     </div>
 
@@ -327,7 +317,6 @@
                                         <input type="checkbox" class="custom-control-input" readonly  name="user_type" value="admin" checked>
                                         <label class="custom-control-label cdbc-radio-label" for="user_type">Dashboard Access: Admin Panel</label>
                                     </div>
-                                    {{-- Hidden Field for default owner type --}}
                                     <input type="hidden" name="default_owner_type_key" value="admin"> 
 
                                 </div>
@@ -335,9 +324,9 @@
                             
                             <div class="mt-5 pt-4 border-top d-flex justify-content-end">
                                 <button type="submit" class="btn cdbc-btn cdbc-btn-success btn-lg">
-                                    <i class="mdi mdi-check-circle-outline"></i> Create Business & Assign Owner
+                                    <i class="mdi mdi-check-circle-outline"></i> Update Business
                                 </button>
-                                <a href="#" class="btn cdbc-btn cdbc-btn-danger btn-lg ml-3">Cancel</a>
+                                <a href="{{ route('admin.businesses.index') }}" class="btn cdbc-btn cdbc-btn-danger btn-lg ml-3">Cancel</a>
                             </div>
                         </form>
 
@@ -347,9 +336,7 @@
         </div>
     </div>
     
-    {{-- Main Content ($slot) --}}
-
-    @push('script')
+    @push('js')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const existingFieldsContainer = document.getElementById('existing-user-fields');
@@ -361,10 +348,6 @@
             const newUserName = document.getElementById('new_user_name');
             const newUserPhone = document.getElementById('new_user_phone');
             
-            // Optional fields (no need to dynamically set/unset required attribute)
-            const newUserEmail = document.getElementById('new_user_email');
-            const newUserPassword = document.getElementById('new_user_password');
-
             function toggleOwnerFields(type) {
                 if (type === 'existing') {
                     // Visuals
@@ -392,16 +375,20 @@
                 }
             }
 
-            // Initial setup based on checked radio button (handling validation errors/old data)
-            let initialType = 'existing';
-            const oldOwnerType = "{{ old('owner_type') }}";
-            if (oldOwnerType === 'new') {
+            // Initial setup based on checked radio button (handling old data)
+            let initialType = '{{ $currentOwnerType }}';
+            
+            // Validation error-এর পরে যদি নতুন User-এর কোনো field-এ error থাকে, বা old owner type 'new' থাকে
+            @if ($errors->has('new_user_name') || $errors->has('new_user_phone') || old('owner_type') == 'new')
                 initialType = 'new';
-                document.getElementById('owner_new').checked = true;
-            } else {
-                // Ensure default radio is checked if no old input exists
-                document.getElementById('owner_existing').checked = true;
-            }
+                // নিশ্চিত করুন সঠিক রেডিও বাটন চেক করা আছে
+                const ownerNewRadio = document.getElementById('owner_new');
+                if(ownerNewRadio) ownerNewRadio.checked = true;
+            @else
+                // নিশ্চিত করুন 'existing' রেডিও বাটন চেক করা আছে
+                const ownerExistingRadio = document.getElementById('owner_existing');
+                if(ownerExistingRadio) ownerExistingRadio.checked = true;
+            @endif
             
             toggleOwnerFields(initialType);
             

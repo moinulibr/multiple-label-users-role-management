@@ -104,13 +104,15 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 });
 
 
-Route::prefix('businesses')->middleware(['auth'])->group(function () {
+Route::prefix('admin')->name('admin.businesses.')->middleware(['auth'])->group(function () {
     // বিজনেস তৈরি ও এডিট (এখানে শুধু Create/Store দেওয়া হলো)
-    Route::get('/create', [BusinessController::class, 'create'])->name('businesses.create');
-    Route::post('/', [BusinessController::class, 'store'])->name('businesses.store');
+    Route::get('businesses', [BusinessController::class, 'index'])->name('index')->middleware('permission:businesses.view');
+    Route::get('businesses/create', [BusinessController::class, 'create'])->name('create')->middleware('permission:businesses.create');
+    Route::post('businesses/store', [BusinessController::class, 'store'])->name('store')->middleware('permission:businesses.create');
     // অন্যান্য CRUD রুট প্রয়োজন হলে যোগ করুন:
-    // Route::get('/{business}/edit', [BusinessController::class, 'edit'])->name('businesses.edit');
-    // Route::put('/{business}', [BusinessController::class, 'update'])->name('businesses.update');
+    Route::get('/{business}/edit', [BusinessController::class, 'edit'])->name('edit');
+    Route::put('/{business}', [BusinessController::class, 'update'])->name('update');
+    Route::get('/{business}/show', [BusinessController::class, 'show'])->name('show');
 });
 
 // User Profile Management Routes

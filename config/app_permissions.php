@@ -45,6 +45,16 @@ return [
             ],
         ],
 
+        'businesses' => [
+            'actions' => [
+                'manage' => ['isAllowedToAllContextLayer' => true],
+                'view'   => ['isAllowedToAllContextLayer' => true],
+                'create' => ['isAllowedToAllContextLayer' => false, 'contextLayer' => ['primary', 'secondary']],
+                'edit'   => ['isAllowedToAllContextLayer' => false, 'contextLayer' => ['primary', 'secondary', 'sub-secondary']],
+                'assign' => ['isAllowedToAllContextLayer' => false, 'contextLayer' => ['primary']],
+            ],
+        ],
+
         'roles' => [
             'actions' => [
                 'manage' => ['isAllowedToAllContextLayer' => true],
