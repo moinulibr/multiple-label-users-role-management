@@ -16,27 +16,27 @@ use Illuminate\Support\Facades\Log;
 class BusinessController extends Controller
 {
     /**
-     * Show the form for creating a new business.
+     * Display a listing of the business.
      */
     public function index(Request $request)
     {
-        // সার্চ এবং ফিল্টার লজিক
+        // Fetch search and filter parameters
         $search = $request->get('search');
         $status = $request->get('status');
 
         $businesses = Business::query()
-            // ✅ এখন owner.userProfile রিলেশনটি কাজ করবে!
+            // Eager load the owner and their primary user profile
             ->with('owner.userProfile')
 
-            // Filtering-এর জন্য Join ব্যবহার
+            // Left Join the user_profiles table to enable filtering by owner status
             ->leftJoin('user_profiles', function ($join) {
-                // UserProfile-এ user_id এবং Business owner-এর user_id ম্যাচ করে
+                // Match the business owner (user_id)
                 $join->on('businesses.user_id', '=', 'user_profiles.user_id')
-                    // এবং নিশ্চিত করা হলো এটি primary profile
+                    // And ensure we are checking the primary profile
                     ->where('user_profiles.default_login', true);
             })
 
-            // সার্চ লজিক
+            // Search logic (Business fields OR Owner fields)
             ->when($search, function ($query, $search) {
                 $query->where('businesses.name', 'like', '%' . $search . '%')
                     ->orWhere('businesses.email', 'like', '%' . $search . '%')
@@ -46,12 +46,12 @@ class BusinessController extends Controller
                             ->orWhere('phone', 'like', '%' . $search . '%');
                     });
             })
-            // Status Filtering লজিক (UserProfile-এর status কলাম ব্যবহার করে)
+            // Status Filtering logic (Uses the status column from the joined user_profiles table)
             ->when($status !== null && $status !== '', function ($query) use ($status) {
-                // status-টি user_profiles টেবিল থেকে আসছে
                 $query->where('user_profiles.status', $status);
             })
 
+            // Select only business columns to avoid ambiguity with joined columns
             ->select('businesses.*')
             ->orderBy('businesses.created_at', 'desc')
             ->paginate(10)
@@ -64,8 +64,12 @@ class BusinessController extends Controller
         ]);
     }
 
+    /**
+     * Show the form for creating a new business.
+     */
     public function create()
     {
+        // Load existing users for the 'Existing User' dropdown
         $users = User::where('status', 1)->get(['id', 'name', 'phone']);
         $parentBusinesses = Business::all(['id', 'name']);
 
@@ -75,43 +79,41 @@ class BusinessController extends Controller
 
     /**
      * Store a newly created business and assign an owner.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
     {
-        // 1. Owner Type Fetch করা
+        // 1. Determine Owner Type from request
         $ownerType = $request->input('owner_type');
 
-        // 2. Validation Rules
+        // 2. Define Conditional Validation Rules
         $userValidationRules = [
             'owner_type' => ['required', Rule::in(['existing', 'new'])],
 
-            // === A. EXISTING USER RULS ===
+            // === A. EXISTING USER RULES ===
             'user_id' => [
+                // Required if 'existing' is selected
                 Rule::requiredIf($ownerType === 'existing'),
-                 Rule::when($ownerType === 'existing', ['exists:users,id'], ['nullable']),
+                // Only validate existence if 'existing' is selected
+                Rule::when($ownerType === 'existing', ['exists:users,id'], ['nullable']),
             ],
 
-            // === B. NEW USER RULS ===
+            // === B. NEW USER RULES (Required if 'new' is selected) ===
             'new_user_name' => [
                 Rule::requiredIf($ownerType === 'new'),
-
                 Rule::when($ownerType === 'new', ['string', 'max:255']),
                 'nullable',
             ],
             'new_user_phone' => [
                 Rule::requiredIf($ownerType === 'new'),
+                // Phone must be unique across all users
                 Rule::when($ownerType === 'new', ['unique:users,phone', 'max:20']),
                 'nullable',
             ],
 
             // --- Optional New User Fields ---
             'new_user_email' => ['nullable', 'email', 'unique:users,email'],
-
-            // === B. NEW USER RULS ===
             'new_user_password' => [
+                // Password is optional but must be min:6 if provided
                 Rule::when($ownerType === 'new', ['string', 'min:6']),
                 'nullable',
             ],
@@ -123,53 +125,61 @@ class BusinessController extends Controller
             'phone2' => 'nullable|string|max:20',
             'website' => 'nullable|url|max:255',
             'address' => 'nullable|string|max:500',
+            // Checkbox value
             'can_manage_roles' => 'boolean',
-            'default_owner_type_key' => 'required|string', // Hidden field check
+            // Hidden field for UserType lookup
+            'default_owner_type_key' => 'required|string',
         ];
 
+        // 3. Validate the request
         $validated = $request->validate(array_merge($userValidationRules, $businessValidationRules));
 
         try {
+            // Start Transaction to ensure both Business and Profile are created
             DB::beginTransaction();
             $ownerId = null;
 
-            // ৪. Owner Creation/Assignment 
+            // 4. Owner Creation/Assignment 
             if ($validated['owner_type'] === 'new') {
+                // Create a new User record
                 $owner = User::create([
                     'name' => $validated['new_user_name'],
                     'phone' => $validated['new_user_phone'],
                     'email' => $validated['new_user_email'] ?? null,
+                    // Hash password if provided, otherwise null (or random hash)
                     'password' => $validated['new_user_password'] ?
                         Hash::make($validated['new_user_password']) :
-                        null, 
+                        null,
                 ]);
                 $ownerId = $owner->id;
             } else {
+                // Use the selected existing User ID
                 $ownerId = $validated['user_id'];
             }
 
+            // 5. Create the Business record
             $business = Business::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'phone2' => $validated['phone2'],
                 'website' => $validated['website'],
                 'address' => $validated['address'],
-                'user_id' => $ownerId, 
-                'hierarchy_level_id' => 2,
+                'user_id' => $ownerId, // Link business to the owner
+                'hierarchy_level_id' => 2, // Assuming a fixed level for new businesses
+                // Check if the checkbox was present in the request
                 'can_manage_roles' => $request->has('can_manage_roles'),
             ]);
 
-            // 6. UserProfile (Business Owner)
+            // 6. Create UserProfile (Business Owner's primary profile)
             $admin = $validated['default_owner_type_key'] ?? 'admin';
-            //$ownerUserType = UserType::where('name', $validated['default_owner_type_key'])->firstOrFail();
             $ownerUserType = UserType::where('name', $admin)->firstOrFail();
 
             UserProfile::create([
                 'user_id' => $ownerId,
-                'user_type_id' => $ownerUserType->id,//admin == 2
+                'user_type_id' => $ownerUserType->id, // e.g., 'admin' role ID
                 'business_id' => $business->id,
-                'status' => 1,
-                'default_login' => true,
+                'status' => 1, // Active
+                'default_login' => true, // Primary profile for this user
             ]);
 
             DB::commit();
@@ -184,24 +194,26 @@ class BusinessController extends Controller
         }
     }
 
+    /**
+     * Display the specified business.
+     */
     public function show(Business $business)
     {
-        // Owner এবং তার Profile ডেটা eager load করা হলো
+        // Eager load the Owner and their Profile data
         $business->load('owner.userProfile');
 
         return view('businesses.show', compact('business'));
     }
 
-    // --- ২. এডিট ফর্ম লোড (edit) ---
     /**
      * Show the form for editing the specified resource.
      */
     public function edit(Business $business)
     {
-        // সমস্ত ইউজারদের তালিকা লোড করা হলো Existing Owner সিলেক্ট করার জন্য
+        // Load all users for the Existing Owner selection dropdown
         $users = User::orderBy('name')->get();
 
-        // Owner এবং তার Profile ডেটা eager load করা হলো
+        // Eager load the Owner and their Profile data
         $business->load('owner.userProfile');
 
         return view('businesses.edit', [
@@ -210,55 +222,51 @@ class BusinessController extends Controller
         ]);
     }
 
-    // --- ৩. ডেটা আপডেট (update) ---
     /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, Business $business)
     {
-        // ১. Owner Type Fetch করা
+        // 1. Determine Owner Type
         $ownerType = $request->input('owner_type');
 
-        // ২. ভ্যালিডেশন রুলস তৈরি করা
-        // বর্তমান Owner এর ID বের করা
+        // Get current Owner ID for validation ignoring/profile switching
         $currentOwnerId = $business->user_id;
 
+        // 2. Define Conditional Validation Rules
         $userValidationRules = [
             'owner_type' => ['required', Rule::in(['existing', 'new'])],
 
-            // === A. EXISTING USER RULS ===
+            // === A. EXISTING USER RULES ===
             'user_id' => [
-                // 'existing' সিলেক্ট করা হলে user_id আবশ্যক
+                // Required if 'existing' is selected
                 Rule::requiredIf($ownerType === 'existing'),
                 Rule::when($ownerType === 'existing', ['exists:users,id']),
-                'nullable', // 'new' সিলেক্ট করা হলে user_id nullable হবে
+                'nullable', // nullable if 'new' is selected
             ],
 
-            // === B. NEW USER RULS ===
+            // === B. NEW USER RULES ===
             'new_user_name' => [
-                // 'new' সিলেক্ট করা হলে Name আবশ্যক
                 Rule::requiredIf($ownerType === 'new'),
                 'nullable',
                 'string',
                 'max:255',
             ],
             'new_user_phone' => [
-                // 'new' সিলেক্ট করা হলে Phone আবশ্যক
                 Rule::requiredIf($ownerType === 'new'),
                 'nullable',
                 'max:20',
-                // ফোন ইউনিক হতে হবে। যদি Owner পরিবর্তন না হয়, তবে এই রুল ইগনোর করবে না। 
-                // তাই, বর্তমান Owner-কে বাদ দিয়ে বাকিদের সাথে চেক করবে।
+                // Unique check: Ignore the current business owner's phone to allow updates without error
                 Rule::unique('users', 'phone')->ignore($currentOwnerId),
             ],
             'new_user_email' => [
                 'nullable',
                 'email',
                 'max:255',
-                // ইমেল ইউনিক হতে হবে। বর্তমান Owner-কে বাদ দিয়ে বাকিদের সাথে চেক করবে।
+                // Unique check: Ignore the current business owner's email
                 Rule::unique('users', 'email')->ignore($currentOwnerId),
             ],
-            // পাসওয়ার্ড ঐচ্ছিক, যদি দেওয়া হয় তবে min:6 হতে হবে।
+            // Password is optional, must be min:6 if provided.
             'new_user_password' => [
                 Rule::when($ownerType === 'new', ['string', 'min:6']),
                 'nullable',
@@ -270,77 +278,68 @@ class BusinessController extends Controller
                 'required',
                 'string',
                 'max:255',
-                // Business Name: এটি বর্তমান business-এর নাম ছাড়া ইউনিক হতে হবে।
+                // Unique check: Ignore the current business's name
                 Rule::unique('businesses', 'name')->ignore($business->id),
             ],
             'email' => 'nullable|email|max:255',
             'phone2' => 'nullable|string|max:20',
             'website' => 'nullable|url|max:255',
             'address' => 'nullable|string|max:500',
-            // Checkbox এর জন্য boolean এবং default value সেট করা হয়েছে।
+            // Checkbox
             'can_manage_roles' => 'nullable|boolean',
             'default_owner_type_key' => 'required|string',
         ];
 
-        // ৩. সমস্ত রুলস একত্রীকরণ এবং ভ্যালিডেশন
-        // ভ্যালিডেশন ফেইল হলে Laravel নিজে থেকেই এরর সহ back করে দেবে।
+        // 3. Merge and Validate the request
         $validated = $request->validate(array_merge($userValidationRules, $businessValidationRules));
 
         try {
             DB::beginTransaction();
             $ownerId = $currentOwnerId;
 
-            // ৪. Owner Assignment লজিক
+            // 4. Owner Assignment Logic (Creation or Selection)
             if ($validated['owner_type'] === 'new') {
-                // নতুন ইউজার তৈরি 
-
-                // নতুন ইউজারের তথ্য তৈরি
+                // Logic assumes 'new' means creating an entirely new user
                 $newUserData = [
                     'name' => $validated['new_user_name'],
                     'phone' => $validated['new_user_phone'],
                     'email' => $validated['new_user_email'] ?? null,
-                    // পাসওয়ার্ড না দিলে একটি random পাসওয়ার্ড তৈরি করা হলো
+                    // If no password is given, create a random hash for security
                     'password' => $validated['new_user_password'] ?
                         Hash::make($validated['new_user_password']) :
                         Hash::make(substr(md5(rand()), 0, 8)),
                 ];
 
-                // যদি বর্তমানে কোনো user না থাকে (যা হওয়ার কথা নয়), তবে নতুন user তৈরি করা সহজ।
-                // কিন্তু যেহেতু এটি একটি Update মেথড, আমরা বর্তমান Owner-কে আপডেট করতে পারি
-                // যদি নতুন ফোন/নাম/ইমেল দেওয়া থাকে। 
-                // তবে 'new' সিলেক্ট করা মানে সম্পূর্ণ নতুন ইউজার তৈরি করা, তাই সেটাই করা হলো:
                 $owner = User::create($newUserData);
                 $ownerId = $owner->id;
             } elseif ($validated['owner_type'] === 'existing') {
-                // Existing ইউজার ব্যবহার করা
+                // Use the selected existing User ID
                 $ownerId = $validated['user_id'];
-
-                // এখানে কোনো নতুন ইউজার তৈরি হচ্ছে না।
+                // NOTE: User details (name/phone/email/password) of the existing user are NOT updated here.
             }
 
-            // ৫. Business আপডেট
+            // 5. Update Business Details
             $business->update([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'phone2' => $validated['phone2'],
                 'website' => $validated['website'],
                 'address' => $validated['address'],
-                'user_id' => $ownerId, // নতুন/বর্তমান Owner ID সেট করা হলো
+                'user_id' => $ownerId, // Set the new/current Owner ID
                 'can_manage_roles' => $request->has('can_manage_roles'),
-                // 'is_prime' এর মতো অন্যান্য field থাকলে এখানে যোগ করুন
             ]);
 
-            // ৬. UserProfile লজিক (যদি Owner পরিবর্তন হয়)
+            // 6. UserProfile Logic (Only if Owner changes)
             if ($ownerId != $currentOwnerId) {
-                // পুরানো Owner-এর UserProfileinactive/default_login false করা
+                // Deactivate/un-default the OLD Owner's profile for this business
                 UserProfile::where('user_id', $currentOwnerId)
                     ->where('business_id', $business->id)
                     ->update(['default_login' => false, 'status' => 0]);
 
-                // নতুন Owner-এর জন্য UserProfile তৈরি/আপডেট করা
+                // Find the appropriate UserType (e.g., 'admin')
                 $ownerUserType = UserType::where('name', $validated['default_owner_type_key'])->firstOrFail();
 
-                // নতুন Owner-এর জন্য নতুন প্রোফাইল তৈরি বা existing আপডেট করা 
+                // Create or Update the NEW Owner's profile for this business
                 $newProfile = UserProfile::firstOrNew([
                     'user_id' => $ownerId,
                     'business_id' => $business->id,
@@ -349,7 +348,7 @@ class BusinessController extends Controller
                 $newProfile->fill([
                     'user_type_id' => $ownerUserType->id,
                     'status' => 1,
-                    'default_login' => true,
+                    'default_login' => true, // Set as primary profile
                 ])->save();
             }
 
@@ -359,183 +358,12 @@ class BusinessController extends Controller
                 ->with('success', 'Business **' . $business->name . '** updated successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
-            // এরর লগ করা হলো
+            // Log the error for debugging
             Log::error('Business Update Failed.', ['business_id' => $business->id, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
 
-            // এরর মেসেজ সহ back করা হলো
+            // Return with error message and preserved input
             return back()->withInput()->with('error', 'Business update failed. Internal error: ' . $e->getMessage());
         }
     }
-    /**
-     * Store a newly created business and assign owner profile.
-     */
-    public function oldstore(Request $request)
-    {
-        $ownerType = $request->input('owner_type');
 
-        $userValidationRules = [
-            'owner_type' => ['required', Rule::in(['existing', 'new'])],
-
-            // === EXISTING USER RULS (Fixed in previous step) ===
-            'user_id' => [
-                Rule::requiredIf($ownerType === 'existing'),
-                // 'nullable' removed
-                'exists:users,id'
-            ],
-
-            // === NEW USER RULS (Fixed now) ===
-            'new_user_name' => [
-                Rule::requiredIf($ownerType === 'new'),
-                // 'nullable' removed - If required, it must not be null/empty
-                'string',
-                'max:255'
-            ],
-            'new_user_phone' => [
-                Rule::requiredIf($ownerType === 'new'),
-                // 'nullable' removed - If required, it must not be null/empty
-                'unique:users,phone',
-                'max:20'
-            ],
-
-            // --- Optional Fields (nullable is appropriate here) ---
-            'new_user_email' => ['nullable', 'email', 'unique:users,email'],
-            'new_user_password' => ['nullable', 'string', 'min:6'],
-        ];
-
-        $businessValidationRules = [
-            'name' => 'required|string|max:255|unique:businesses,name',
-            'email' => 'nullable|email|max:255',
-            'phone2' => 'nullable|string|max:20',
-            'website' => 'nullable|url|max:255',
-            'address' => 'nullable|string|max:500',
-            'can_manage_roles' => 'boolean',
-            //'parent_business_id' => 'nullable|exists:businesses,id',
-            //'is_prime' => 'boolean',
-            //'default_owner_type_key' => 'required|exists:user_types,name', // e.g., 'rent_owner'
-        ];
-
-        // Merge and validate all rules
-        $validated = $request->validate(array_merge($userValidationRules, $businessValidationRules));
-
-        //try {
-        //DB::beginTransaction();
-        $ownerId = null;
-
-        // 2. Handle Owner Creation/Assignment
-        if ($validated['owner_type'] === 'new') {
-            // Create a new User
-            $owner = User::create([
-                'name' => $validated['new_user_name'],
-                'phone' => $validated['new_user_phone'],
-                'email' => $validated['new_user_email'] ?? null,
-                // Hash the password if provided, otherwise use a default/null value
-               // 'password' => $request->input('new_user_password') ? Hash::make($request->input('new_user_password')) : null,
-            ]);
-            $ownerId = $owner->id;
-        } else {
-            $ownerId = $validated['user_id'];
-        }
-        Log::info('Owner ID: ' . $ownerId);
-        // 3. Create the Business
-        $business = Business::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'phone2' => $validated['phone2'],
-            'website' => $validated['website'],
-            'address' => $validated['address'],
-            'user_id'=> $ownerId,
-            'hierarchy_level_id'=> 2,
-            //'parent_business_id' => $validated['parent_business_id'],
-            //'is_prime' => $request->has('is_prime'),
-            // 'can_manage_roles' is generally stored on the business or the user's profile
-            'can_manage_roles' => $request->has('can_manage_roles'),
-        ]);
-
-        // 4. Assign Owner Profile to the Business (Assuming Business model has an owner relation via UserProfile)
-        $userTypes = 'admin';
-        // Fetch the UserType model based on the key (e.g., 'rent_owner')
-        $ownerUserType = UserType::where('name', $userTypes)->firstOrFail();
-
-        // Create the UserProfile (Owner profile)
-        UserProfile::create([
-            'user_id' => $ownerId,
-            'user_type_id' => $ownerUserType->id,
-            'business_id' => $business->id,
-            'status' => 1, // Active profile
-            'default_login' => true, // Make this the primary profile
-        ]);
-
-        // Optional: You might want to unset the default_login flag for any previous profile of this user, 
-        // depending on your application's single-default-profile logic.
-        // Example: UserProfile::where('user_id', $ownerId)->where('id', '!=', $newProfileId)->update(['default_login' => false]);
-
-
-        //DB::commit();
-
-        return redirect()->route('admin.businesses.index')
-            ->with('success', 'Business created successfully and owner assigned.');
-        //} catch (\Exception $e) {
-        //DB::rollBack();
-        // Log the error for debugging
-       // Log::error('Business Creation Error: ' . $e->getMessage());
-
-        //return back()->withInput()->with('error', 'An error occurred during business creation: ' . $e->getMessage());
-        //}
-    }
-    /* public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:150|unique:businesses,name',
-            'user_id' => 'required|exists:users,id',
-            'email' => 'nullable|email|max:120|unique:businesses,email',
-            'phone2' => 'nullable|string|max:20',
-            'address' => 'nullable|string',
-            'website' => 'nullable|url|max:150',
-            'parent_business_id' => 'nullable|exists:businesses,id',
-            'is_prime' => 'boolean',
-            'can_manage_roles' => 'boolean',
-            // Default business owner user type key
-            'default_owner_type_key' => 'required|string',
-        ]);
-
-        // Transaction ensures atomicity (Business and Profile creation)
-        try {
-            DB::beginTransaction();
-
-            // 1. Create the Business
-            $business = Business::create([
-                'name' => $validated['name'],
-                'slug' => \Str::slug($validated['name']), // Assuming you are using Laravel Str helper
-                'user_id' => $validated['user_id'],
-                'email' => $validated['email'],
-                'phone2' => $validated['phone2'],
-                'address' => $validated['address'],
-                'website' => $validated['website'],
-                'parent_business_id' => $validated['parent_business_id'],
-                'is_prime' => $request->has('is_prime'),
-                'can_manage_roles' => $request->has('can_manage_roles'),
-                'default_login' => true, // Owner's business is generally default login
-                'hierarchy_level_id' => $validated['parent_business_id'] ? 2 : 1, // Simple hierarchy logic
-            ]);
-
-            // 2. Assign the default profile (e.g., 'rent_owner' or 'super_admin' based on logic)
-            $ownerUserType = UserType::where('name', $validated['default_owner_type_key'])->firstOrFail();
-
-            UserProfile::create([
-                'user_id' => $validated['user_id'],
-                'user_type_id' => $ownerUserType->id,
-                'business_id' => $business->id,
-                'default_login' => true,
-                'status' => 1,
-            ]);
-
-            DB::commit();
-
-            return redirect()->route('businesses.create')->with('success', 'নতুন বিজনেস ও মালিকের প্রোফাইল সফলভাবে তৈরি করা হয়েছে!');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            // Log the error and return a user-friendly message
-            return back()->withInput()->with('error', 'বিজনেস তৈরি করার সময় একটি ত্রুটি হয়েছে: ' . $e->getMessage());
-        }
-    } */
 }

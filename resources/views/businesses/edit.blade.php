@@ -2,7 +2,7 @@
     
     {{-- Page Title (Named Slot: header) --}}
     <x-slot name="page_title">
-        Edit Business: {{ $business->name }}
+        Edit Business:
     </x-slot>
 
 

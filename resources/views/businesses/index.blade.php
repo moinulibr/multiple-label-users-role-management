@@ -17,6 +17,63 @@
         .status-active { background-color: #d1e7dd; color: #0f5132; }
         .status-inactive { background-color: #f8d7da; color: #842029; }
         .action-btn { margin-right: 5px; }
+
+
+        
+    /* --- Pagination Styling --- */
+ .cdbc-pagination-container {
+        margin-top: 20px;
+        display: flex;
+        justify-content: space-between; 
+        align-items: center;
+        padding: 10px 0;
+        font-size: 14px;
+    }
+    .cdbc-pagination-container .pagination-details {
+        color: #555;
+        font-weight: 500;
+    }
+
+    /* কাস্টম টেমপ্লেট (cdbc-pagination) অনুযায়ী CSS আপডেট করা */
+    .cdbc-pagination-links {
+        display: block; /* Flexbox ভেতরেই থাকবে */
+    }
+    .cdbc-pagination {
+        display: flex; /* UL কে Flex করা */
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .cdbc-pagination .cdbc-page-item {
+        margin: 0 2px;
+    }
+    .cdbc-pagination .cdbc-page-link {
+        display: block;
+        padding: 6px 10px;
+        text-decoration: none;
+        color: #6c63ff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        transition: 0.2s;
+        min-width: 32px;
+        text-align: center;
+        background: #fff;
+    }
+    .cdbc-pagination .cdbc-page-item:not(.active) .cdbc-page-link:hover {
+        background: #f0f0ff;
+    }
+    .cdbc-pagination .cdbc-page-item.active .cdbc-page-link,
+    .cdbc-pagination .cdbc-page-item.active .cdbc-page-link:hover {
+        background: #6c63ff;
+        color: #fff;
+        border-color: #6c63ff;
+    }
+    .cdbc-pagination .cdbc-page-item.disabled .cdbc-page-link {
+        color: #aaa;
+        background: #f9f9f9;
+        cursor: default;
+    }
+
     </style>
     @endpush
 
@@ -35,7 +92,7 @@
         <div class="cdbc-list-card">
             <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
                 <h4 class="mb-0 text-primary font-weight-bold">Business Management</h4>
-                <a href="{{ route('admin.businesses.create') }}" class="btn cdbc-btn-success btn-sm">
+                <a href="{{ route('admin.businesses.create') }}" class="btn btn-outline-success btn-sm" style="border-color:#0acb8e !important">
                     <i class="mdi mdi-plus-circle-outline"></i> Create New Business
                 </a>
             </div>
@@ -63,7 +120,7 @@
 
                 {{-- Business List Table --}}
                 <div class="table-responsive">
-                    <table class="table table-hover cdbc-table">
+                    <table class="table  cdbc-table">
                         <thead>
                             <tr>
                                 <th>#</th>
@@ -129,14 +186,12 @@
                 </div>
 
                 {{-- Pagination Links --}}
-                <div class="d-flex justify-content-center mt-4">
-                    <div class="cdbc-pagination-container">
-                        <div class="pagination-details">
-                            Showing {{ $businesses->firstItem() }} to {{ $businesses->lastItem() }} of {{ $businesses->total() }} results
-                        </div>
-                        <div class="pagination-links">
-                            {{ $businesses->links('vendor.pagination.custom') }} 
-                        </div>
+                <div class="cdbc-pagination-container">
+                    <div class="pagination-details">
+                        Showing {{ $businesses->firstItem() }} to {{ $businesses->lastItem() }} of {{ $businesses->total() }} results
+                    </div>
+                    <div class="pagination-links">
+                        {{ $businesses->links('vendor.pagination.custom') }} 
                     </div>
                 </div>
 
