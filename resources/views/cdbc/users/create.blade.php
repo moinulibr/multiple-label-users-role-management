@@ -637,13 +637,13 @@
                 const defaultLoginCount = document.querySelectorAll('.default-login:checked').length;
                 
                 if (defaultLoginCount !== 1) {
-                    alert('ফর্মটি সাবমিট করার আগে ঠিক একটি প্রোফাইলকে ডিফল্ট লগইন হিসেবে নির্বাচন করতে হবে।');
+                    alert('Before submitting the form, please select a default login for at least one profile.');
                     e.preventDefault();
                     return;
                 }
                 
                 if (checkForDuplicateProfiles()) {
-                    alert('ফর্মটি সাবমিট করার আগে ডুপ্লিকেট প্রোফাইলগুলো (লাল বর্ডারযুক্ত) ঠিক করুন।');
+                    alert('Before submitting the form, please correct any duplicate profiles.');
                     e.preventDefault();
                 }
             });
