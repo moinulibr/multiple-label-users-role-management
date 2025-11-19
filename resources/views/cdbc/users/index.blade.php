@@ -11,7 +11,7 @@
     <form id="filter-form" method="GET" action="{{ route('admin.users.index') }}" class="cdbc-filter-form">
         <input type="text" id="user-search" name="search" value="{{ request('search') }}" placeholder="Search users...">
 
-        <select name="business_id">
+        <select name="business_id" style="width:18%">
             <option value="">All Businesses</option>
             @foreach($businesses as $b)
                 <option value="{{ $b->id }}" {{ request('business_id') == $b->id ? 'selected' : '' }}>{{ $b->name }}</option>
@@ -95,7 +95,7 @@
     .cdbc-btn-primary { background: #6c63ff; color: #fff; }
     .cdbc-btn-primary:hover { background: #5a54e0; }
     .cdbc-btn-filter { background: #007bff; color: #fff; border: none; }
-    .cdbc-btn-reset { background: #e0e0e0; color: #333; text-decoration: none; }
+    .cdbc-btn-reset { background: #424242; color: #fff; text-decoration: none; }
     .cdbc-btn-reset:hover { background: #d6d6d6; }
 
     table.cdbc-table {
