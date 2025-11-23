@@ -1,19 +1,19 @@
 <x-admin-layout>
   
-    {{-- পেজের টাইটেল (header নামে Named Slot) --}}
+    {{-- page title (header name Named Slot) --}}
     <x-slot name="page_title">
         Blank Page - page title
     </x-slot>
 
 
 
-    {{-- মূল কন্টেন্ট ($slot) --}}
+    {{-- main content ($slot) --}}
 
     <div class="row">
         <div class="col-12">
             <div class="card card-default">
                 <div class="card-header">
-                    <h2>এখানে পেজের মূল তথ্য শুরু হবে</h2>
+                    <h2>এখানে পেজের মূল তথ্য শুরু হবে  </h2>
                 </div>
                 <div class="card-body">
                     <!-- আপনার ফর্ম বা ডেটা টেবিল এর কোড এখানে দিন -->
@@ -33,7 +33,7 @@
     @push('script')
         <!-- Core & Utility JS -->
 
-        <!-- Charting Library (আপনার কোডে spline-area, mixed-chart থাকার জন্য এটি জরুরি) -->
+        <!-- Charting Library (in code - spline-area, mixed-chart থাকার জন্য এটি জরুরি) -->
         {{-- <script src="{{asset('assets/admin/plugins/apexcharts/apexcharts.min.js')}}"></script>
 
         <!-- Template Specific JS (যেমন অফক্যানভাস, ড্রপডাউন এবং অন্যান্য UI ফাংশনালিটির জন্য) -->
