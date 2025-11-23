@@ -233,7 +233,7 @@ Settings
                             </div>
 
                             
-                            <!-- Header Script -->
+                            <!-- add new Script -->
                             {{-- <div class="form-group mb-4">
                                 <label for="header_script" class="form-label">Header Scripts (Tracking, Analytics)</label>
                                 <textarea id="header_script" name="header_script" class="form-control font-monospace" rows="5" placeholder="Paste Google Analytics, custom CSS, or other scripts here. Will be injected into <head> tag.">{{ $settings['header_script'] ?? '' }}</textarea>
