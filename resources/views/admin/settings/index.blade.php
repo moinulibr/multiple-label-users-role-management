@@ -231,6 +231,15 @@ Settings
                                 </div>
                                 <small class="form-text text-danger">When enabled, the site will show a maintenance message.</small>
                             </div>
+
+                            
+                            <!-- Header Script -->
+                            {{-- <div class="form-group mb-4">
+                                <label for="header_script" class="form-label">Header Scripts (Tracking, Analytics)</label>
+                                <textarea id="header_script" name="header_script" class="form-control font-monospace" rows="5" placeholder="Paste Google Analytics, custom CSS, or other scripts here. Will be injected into <head> tag.">{{ $settings['header_script'] ?? '' }}</textarea>
+                                @error('header_script')<div class="text-danger mt-1">{{ $message }}</div>@enderror
+                            </div> --}}
+                            
                         </div>
 
                     </div>
