@@ -10,6 +10,8 @@ use App\Models\Business;
 use App\Models\Role;
 use App\Models\UserProfile;
 use App\Services\UserContextManager;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
@@ -334,6 +336,7 @@ class UserController extends Controller
         return redirect()->route('admin.users.index')->with('success', 'User created successfully!');
     }
 
+    
     /**
      * Edit, Update, Show, Destroy methods remain the same as provided.
      */
@@ -379,6 +382,7 @@ class UserController extends Controller
             'profile'
         ));
     }
+
 
     public function update(Request $request, User $user)
     {
@@ -565,5 +569,235 @@ class UserController extends Controller
     {
         $user->update(['status' => 0]);
         return redirect()->route('admin.users.index')->with('success', 'User soft deleted!');
+    }
+
+
+
+    public function oldedit(User $user)
+    {
+        $context = app(UserContextManager::class);
+
+        $profile = $context->getCurrentProfile();
+        $isPrimeCompany = $profile->business?->is_prime ?? false;
+
+        $superAdminType = config('app_permissions.fixedUserType')[1];
+        $adminType = config('app_permissions.fixedUserType')[2];
+
+        $userTypes = UserType::where('status', 1)
+            ->whereNotIn('name', [$superAdminType, $adminType])
+            ->where('dashboard_key', $adminType)
+            ->get();
+
+        $isSoftwareOwnerEmployee = $profile->business?->is_prime ?? false;
+        $businesses = collect();
+        if ($isSoftwareOwnerEmployee) {
+            $businesses = Business::where('status', 1)->get();
+        }
+
+        $currentBusinessName = $profile->business?->name ?? 'N/A';
+        $currentBusinessId = $profile->business?->id ?? null;
+        $hasBusinessAssigned = !empty($currentBusinessId);
+        $roles = Role::where('status', 1)->where('business_id', $currentBusinessId)->get();
+        $user->profiles;
+        $currentSelectedRoleId = $user->profiles()->with('roles')->where('business_id', 1)->first()?->roles->first()?->id;
+
+
+        // --- ১. কন্টেক্সট লোড করা (Context Loading) ---
+        $currentProfile = $context->getCurrentProfile();
+        $currentBusinessId = $context->getBusinessId();
+        //$hasBusinessAssigned = $currentBusinessId !== null;
+
+        // --- ২. ইউজার ডেটা লোড করা (Load Target User Data) ---
+        // প্রয়োজনীয় রিলেশন সহ ইউজারকে লোড করুন
+        $user->load(['profiles.userType', 'profiles.business', 'roles']);
+
+        // --- ৩. প্রোফাইল ডেটা তৈরি করা (Prepare Profiles for Form) ---
+        // Laravel Blade-এ ব্যবহারের জন্য বিদ্যমান প্রোফাইল ডেটা
+        $profiles = $user->profiles->map(function ($profile) use ($currentBusinessId) {
+            return [
+                'id' => $profile->id, // প্রোফাইল আপডেটের জন্য আইডি গুরুত্বপূর্ণ
+                'user_type_id' => $profile->user_type_id,
+                'business_id' => $profile->business_id,
+                'default_login' => $profile->default_login,
+            ];
+        })->toArray();
+
+        // যদি কোনো প্রোফাইল না থাকে, তবে একটি খালি প্রোফাইল তৈরি করুন (ফর্মের সুবিধার জন্য)
+        if (empty($profiles)) {
+            $profiles[] = [
+                'id' => null,
+                'user_type_id' => null,
+                'business_id' => null,
+                'default_login' => true, // ধরে নিলাম ডিফল্ট একটি লগইন থাকবে
+            ];
+        }
+
+        // --- ৪. টেন্যান্সি লজিক সেট করা (Set Tenancy Logic Flags) ---
+        $is_own_business_creation_mode = true;
+
+        // যদি প্রাইম ইউজার হন, তবে দেখতে হবে এডিট করা ইউজারের অন্য কোনো ব্যবসার প্রোফাইল আছে কি না।
+        if ($isSoftwareOwnerEmployee) {
+            // এডিট করা ইউজারের প্রোফাইলগুলির মধ্যে যদি এমন কোনো প্রোফাইল থাকে যার business_id 
+            // লগইন করা ইউজারের currentBusinessId থেকে ভিন্ন, তবে সেটি 'another business' মোডে খুলবে।
+            $hasAnotherBusinessProfile = $user->profiles->contains(function ($profile) use ($currentBusinessId) {
+                return $profile->business_id !== $currentBusinessId;
+            });
+
+            if ($hasAnotherBusinessProfile) {
+                $is_own_business_creation_mode = false;
+            }
+        }
+
+        // --- ৫. অন্যান্য ডেটা লোড করা (Load Supporting Data) ---
+        $userTypes = UserType::all();
+        $businesses = $isSoftwareOwnerEmployee ? Business::all() : collect(); // Prime user sees all businesses
+
+        // রোল শুধুমাত্র কারেন্ট ব্যবসার জন্য লোড করা
+        $roles = $currentBusinessId ? Role::where('business_id', $currentBusinessId)->get() : collect();
+
+        // এডিট করা ইউজারের বর্তমান ব্যবসার জন্য অ্যাসাইন করা রোল আইডি খুঁজে বের করা
+        $selectedRoleId = null;
+        if ($currentBusinessId && $user->roles->isNotEmpty()) {
+            $selectedRole = $user->roles->firstWhere('business_id', $currentBusinessId);
+            $selectedRoleId = optional($selectedRole)->id;
+        }
+
+        return view('user.edit', compact(
+            'user',
+            'profiles',
+            'userTypes',
+            'businesses',
+            'roles',
+            'selectedRoleId', // Selected Role ID for own business
+            'currentBusinessId',
+            'currentBusinessName',
+            'isSoftwareOwnerEmployee',
+            'hasBusinessAssigned',
+            'is_own_business_creation_mode' // এটি টেন্যান্সি মোড সেট করবে
+        ));
+    }
+    public function oldupdate(Request $request, User $user)
+    {
+        $currentBusinessId = UserContextManager::getCurrentBusinessId();
+        $isSoftwareOwnerEmployee = UserContextManager::isSoftwareOwnerEmployee();
+
+        // --- ১. ভ্যালিডেশন (Validation) ---
+        $rules = [
+            'name' => 'required|string|max:255',
+            // ইউনিক রুল-এ বর্তমান ইউজার ID-কে ইগনোর করা
+            'phone' => ['required', 'string', 'max:15', Rule::unique('users', 'phone')->ignore($user->id)],
+            'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'password' => 'nullable|min:6|confirmed', // Nullable: পাসওয়ার্ড না দিলে আপডেট হবে না
+            'status' => 'required|in:active,inactive',
+
+            // প্রোফাইল ভ্যালিডেশন (স্টোর মেথডের মতোই)
+            'profiles' => 'required|array',
+            'profiles.*.user_type_id' => 'required|exists:user_types,id',
+            'profiles.*.business_id' => 'nullable|exists:businesses,id', // প্রাইম ইউজারের জন্য nullable
+            'profiles.*.default_login' => 'nullable|boolean',
+            // নিশ্চিত করা যে শুধুমাত্র একটি ডিফল্ট লগইন সিলেক্টেড আছে
+            'profiles' => [
+                Rule::requiredIf(fn() => true),
+                function ($attribute, $value, $fail) {
+                    $defaultLoginCount = collect($value)->sum(fn($p) => $p['default_login'] ?? 0);
+                    if ($defaultLoginCount !== 1) {
+                        $fail('Only one profile must be selected as the default login.');
+                    }
+                },
+            ],
+        ];
+
+        $request->validate($rules);
+
+        // --- ২. ট্রানজেকশন শুরু করা (Start Transaction) ---
+        DB::beginTransaction();
+
+        try {
+            // --- ৩. ইউজার আপডেট (Update User Details) ---
+            $userData = [
+                'name' => $request->name,
+                'phone' => $request->phone,
+                'email' => $request->email,
+                'status' => $request->status,
+            ];
+
+            // পাসওয়ার্ড আপডেট শুধুমাত্র যদি ইনপুট দেওয়া হয়
+            if ($request->filled('password')) {
+                $userData['password'] = Hash::make($request->password);
+            }
+
+            $user->update($userData);
+
+            // --- ৪. প্রোফাইল সিঙ্ক্রোনাইজেশন (Profile Synchronization) ---
+
+            // রিকোয়েস্টের ডেটা থেকে সেভ করার জন্য একটি অ্যারে তৈরি করা
+            $profilesToSync = [];
+            $isOwnBusinessMode = $isSoftwareOwnerEmployee ? ($request->create_for_own_business == '1') : true;
+
+            foreach ($request->profiles as $profile) {
+                $businessId = $profile['business_id'];
+
+                // যদি নিজের ব্যবসার মোডে থাকে বা টেন্যান্ট হয়, তবে currentBusinessId ব্যবহার করা
+                if (!$isSoftwareOwnerEmployee || $isOwnBusinessMode) {
+                    $businessId = $currentBusinessId;
+                }
+
+                if ($businessId) {
+                    $profilesToSync[] = [
+                        'user_id' => $user->id,
+                        'user_type_id' => $profile['user_type_id'],
+                        'business_id' => $businessId,
+                        'default_login' => $profile['default_login'] ?? false,
+                        'created_at' => now(), // প্রয়োজন হলে
+                        'updated_at' => now(), // প্রয়োজন হলে
+                    ];
+                }
+            }
+
+            // বর্তমান প্রোফাইলগুলি মুছে ফেলা (Profiles)
+            $user->profiles()->delete();
+
+            // নতুন প্রোফাইলগুলি ইনসার্ট করা
+            if (!empty($profilesToSync)) {
+                UserProfile::insert($profilesToSync); // আপনার প্রোফাইল মডেল ব্যবহার করুন
+            }
+
+
+            // --- ৫. রোল সিঙ্ক্রোনাইজেশন (Role Synchronization for Own Business) ---
+
+            // রোল শুধুমাত্র 'own business' মোডের জন্য প্রযোজ্য
+            if ($isOwnBusinessMode && $currentBusinessId) {
+                if ($request->filled('role_id')) {
+                    // বর্তমানে থাকা role-এর মধ্যে শুধুমাত্র currentBusinessId-এর রোলগুলি filter করে, 
+                    // সেগুলির সাথে নতুন রোলটি sync করা
+
+                    // সমস্ত role detach করা হলো
+                    $user->roles()->detach();
+
+                    // নতুন role attach করা
+                    $role = Role::find($request->role_id);
+                    if ($role) {
+                        $user->assignRole($role->name);
+                    }
+                } else {
+                    // যদি role না থাকে, তবে currentBusinessId-এর জন্য সমস্ত রোল রিমুভ করা
+                    $currentRoles = $user->roles->where('business_id', $currentBusinessId)->pluck('name')->toArray();
+                    $user->removeRole($currentRoles);
+                }
+            } else {
+                // যদি 'another business' মোড হয়, তবে currentBusinessId-এর কোনো রোল সিঙ্ক করা হবে না
+                // অথবা যদি অন্য কোনো ব্যবসার জন্য প্রোফাইল আপডেট করা হয়, তবে সেই ব্যবসার রোলও এখানে হ্যান্ডেল করা প্রয়োজন। 
+                // যেহেতু আপনার ফর্মে শুধুমাত্র currentBusinessId-এর রোল সিলেক্ট করার অপশন আছে, তাই 
+                // এই ক্ষেত্রে currentBusinessId-এর রোল আপডেট না করাই নিরাপদ।
+            }
+
+            DB::commit();
+
+            return redirect()->route('user.index')->with('success', 'User updated successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            // Log error and return
+            return redirect()->back()->withInput()->with('error', 'User update failed: ' . $e->getMessage());
+        }
     }
 }
