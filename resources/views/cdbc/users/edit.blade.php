@@ -1,7 +1,6 @@
 <x-admin-layout>
 
     <div class="container">
-        {{-- ফর্ম অ্যাকশন: এডিট হলে 'update', না হলে 'store' --}}
         <form id="user-form" 
             action="{{ isset($user) ? route('user.update', $user) : route('user.store') }}" 
             method="POST">
@@ -380,5 +379,3 @@
         </script>
     @endpush
 </x-admin-layout>
-
-{{-- আপনার _profile_row.blade.php ফাইলটি নিচে দেওয়া হলো --}}
