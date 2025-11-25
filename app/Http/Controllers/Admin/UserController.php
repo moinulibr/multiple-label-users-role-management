@@ -678,8 +678,19 @@ class UserController extends Controller
     }
     public function oldupdate(Request $request, User $user)
     {
-        $currentBusinessId = UserContextManager::getCurrentBusinessId();
-        $isSoftwareOwnerEmployee = UserContextManager::isSoftwareOwnerEmployee();
+        $context = app(UserContextManager::class);
+
+        $profile = $context->getCurrentProfile();
+
+
+        $isSoftwareOwnerEmployee = $profile->business?->is_prime ?? false;
+        $businesses = collect();
+        if ($isSoftwareOwnerEmployee) {
+            $businesses = Business::where('status', 1)->get();
+        }
+
+        $currentBusinessName = $profile->business?->name ?? 'N/A';
+        $currentBusinessId = $profile->business?->id ?? null;
 
         // --- ১. ভ্যালিডেশন (Validation) ---
         $rules = [
