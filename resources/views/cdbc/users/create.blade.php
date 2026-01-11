@@ -555,6 +555,7 @@
                 if (businessDropdown) businessDropdown.addEventListener('change', checkForDuplicateProfiles);
             }
 
+            
             // --- Main Script Execution ---
 
             // 1. Setup Add Profile Button
