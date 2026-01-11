@@ -452,7 +452,7 @@
                         oninput="checkCredentialInput()">
                 </div>
                 
-                <!-- Remember Me / Forgot Password / Resend OTP এর জন্য ডাইনামিক কন্টেইনার -->
+                <!-- Remember Me / Forgot Password / Resend OTP - dynamic container -->
                 <div id="cual-dynamic-options" class="cual-flex-options">
                     
                     <!-- 1. Password Options (Email) -->
