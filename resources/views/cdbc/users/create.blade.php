@@ -57,7 +57,7 @@
                             <p class="cdbc-error-message">{{ $message }}</p>
                         @enderror
                         
-                        {{-- Developer Access checkbox (commented out) --}}
+                        {{-- Developer Access checkbox (commented out) it will be uncommented later --}}
                         {{--
                         <div class="cdbc-checkbox">
                             <input type="checkbox" name="is_developer" {{ old('is_developer', $user->is_developer ?? false) ? 'checked' : '' }}>
